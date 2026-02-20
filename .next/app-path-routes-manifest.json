@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/auth/signout/route": "/api/auth/signout",
+  "/api/fetchPokerNowLedger/route": "/api/fetchPokerNowLedger",
+  "/dashboard/page": "/dashboard",
+  "/game/[gameId]/page": "/game/[gameId]",
+  "/icon.svg/route": "/icon.svg",
+  "/import/page": "/import",
+  "/login/page": "/login",
+  "/opengraph-image.jpg/route": "/opengraph-image.jpg",
+  "/page": "/",
+  "/profile/[userId]/page": "/profile/[userId]",
+  "/profile/page": "/profile"
+}
