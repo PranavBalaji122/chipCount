@@ -17,6 +17,8 @@ export function DashboardActions() {
   const [startError, setStartError] = useState<string | null>(null)
   const [joinLoading, setJoinLoading] = useState(false)
   const [startLoading, setStartLoading] = useState(false)
+  const [gameName, setGameName] = useState("")
+  const [showNameInput, setShowNameInput] = useState(false)
 
   async function ensureProfile(supabase: ReturnType<typeof createClient>, user: User) {
     const fallbackName = user.email ? user.email.split("@")[0] : null
@@ -39,7 +41,8 @@ export function DashboardActions() {
     if (error) throw error
   }
 
-  async function handleStartGame() {
+  async function handleStartGame(e?: React.FormEvent) {
+    e?.preventDefault()
     setStartError(null)
     setStartLoading(true)
     try {
@@ -53,9 +56,10 @@ export function DashboardActions() {
 
       await ensureProfile(supabase, user)
 
+      const description = gameName.trim() || null
       const { data: game, error } = await supabase
         .from("games")
-        .insert({ host_id: user.id })
+        .insert({ host_id: user.id, description })
         .select("id, short_code")
         .single()
       if (error) throw error
@@ -130,25 +134,75 @@ export function DashboardActions() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Start Game modal */}
+      {showNameInput && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowNameInput(false)
+              setGameName("")
+              setStartError(null)
+            }
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl p-6 space-y-5">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">New Table</h2>
+              <p className="text-zinc-400 text-sm">Give your table a name so players know what they're joining.</p>
+            </div>
+            <form onSubmit={handleStartGame} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="game-name">
+                  Table name <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <Input
+                  id="game-name"
+                  placeholder="e.g. Friday Night Poker"
+                  value={gameName}
+                  onChange={(e) => setGameName(e.target.value)}
+                  autoFocus
+                  disabled={startLoading}
+                  className="bg-zinc-900 border-zinc-700"
+                />
+              </div>
+              {startError && <p className="text-destructive text-sm">{startError}</p>}
+              <div className="flex gap-2">
+                <Button type="submit" disabled={startLoading} className="flex-1">
+                  {startLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                  Create Table
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={startLoading}
+                  onClick={() => { setShowNameInput(false); setGameName(""); setStartError(null) }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Start Game button */}
       <div className="flex flex-col gap-2">
         <Button
-          onClick={handleStartGame}
+          onClick={() => setShowNameInput(true)}
           disabled={startLoading}
           className="w-full"
           size="lg"
         >
-          {startLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Play className="mr-2 h-4 w-4" />
-          )}
-          Start Game
+          <Play className="mr-2 h-4 w-4" />
+          Create Table
         </Button>
         <p className="text-muted-foreground text-xs">
-          Create a new game and share the game ID for others to join.
+          Create a new table and share the game ID for others to join.
         </p>
-        {startError && <p className="text-destructive text-sm">{startError}</p>}
       </div>
+
 
       <form onSubmit={handleJoinGame} className="flex flex-col gap-2">
         <Label htmlFor="join-code">Join with Game ID</Label>

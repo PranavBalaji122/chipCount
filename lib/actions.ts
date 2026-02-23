@@ -5,16 +5,28 @@ import { revalidatePath } from "next/cache"
 
 export async function closeGame(gameId: string) {
   const supabase = await createClient()
-  const { error } = await supabase
-    .from("games")
-    .update({ status: "ended" })
-    .eq("id", gameId)
 
-  if (error) {
-    console.error("Error closing game:", error)
+  // Try the close_session RPC (snapshots profits + updates net_profit + sets status = 'ended').
+  // Fall back to a direct status update if the RPC isn't deployed yet.
+  const { error: rpcError } = await supabase.rpc("close_session", {
+    p_game_id: gameId,
+    p_final_status: "ended",
+  })
+
+  if (rpcError) {
+    console.error("close_session RPC failed, falling back to direct update:", rpcError)
+    const { error: fallbackError } = await supabase
+      .from("games")
+      .update({ status: "ended" })
+      .eq("id", gameId)
+    if (fallbackError) {
+      console.error("Fallback update also failed:", fallbackError)
+    }
   }
 
   revalidatePath("/dashboard")
+  revalidatePath("/profile")
+  revalidatePath(`/game/${gameId}`)
 }
 
 export async function setGameStatus(
@@ -38,24 +50,15 @@ export async function setGameStatus(
   if (gameError || !game) throw new Error("Game not found")
   if (game.host_id !== user.id) throw new Error("Not the host")
 
-  // When closing: snapshot current profits for all approved players
+  // When closing: use RPC that snapshots profits AND updates profiles.net_profit
   if (status === "closed") {
-    const { data: players } = await supabase
-      .from("game_players")
-      .select("user_id, cash_in, cash_out")
-      .eq("game_id", gameId)
-      .eq("status", "approved")
-
-    if (players && players.length > 0) {
-      const snapshots = players.map((p: { user_id: string; cash_in: number | null; cash_out: number | null }) => ({
-        game_id: gameId,
-        user_id: p.user_id,
-        cash_in: Number(p.cash_in ?? 0),
-        cash_out: Number(p.cash_out ?? 0),
-        session_net: Number(p.cash_out ?? 0) - Number(p.cash_in ?? 0),
-      }))
-      await supabase.from("session_snapshots").insert(snapshots)
-    }
+    const { error: rpcError } = await supabase.rpc("close_session", { p_game_id: gameId })
+    if (rpcError) throw new Error(rpcError.message)
+    // RPC already updated game status to 'closed', so we can return early
+    revalidatePath(`/game/${gameId}`)
+    revalidatePath("/dashboard")
+    revalidatePath("/profile")
+    return
   }
 
   const { error } = await supabase

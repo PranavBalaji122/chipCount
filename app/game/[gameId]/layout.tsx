@@ -20,7 +20,7 @@ export default async function GameLayout({
 
   const { data: game } = await supabase
     .from("games")
-    .select("id, short_code, host_id, status")
+    .select("id, short_code, host_id, status, description")
     .eq("id", gameId)
     .single()
 
@@ -37,18 +37,28 @@ export default async function GameLayout({
   const isPlayer = !!myParticipation
   if (!isHost && !isPlayer) notFound()
 
+  const gameLabel = game.description || `Game ${game.short_code}`
+
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b">
+      <header className="border-b bg-background">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">Dashboard</Button>
             </Link>
-            <Link href={`/game/${gameId}`} className="text-muted-foreground hover:text-foreground transition-colors">
-              Game {game.short_code}
+            <span className="text-muted-foreground">/</span>
+            <Link
+              href={`/game/${gameId}`}
+              className="font-medium hover:text-foreground transition-colors text-sm"
+            >
+              {gameLabel}
             </Link>
-            {isHost && <span className="rounded bg-primary/20 px-2 py-0.5 text-xs">Host</span>}
+            {isHost && (
+              <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
+                Host
+              </span>
+            )}
           </div>
           <Link href={`/game/${gameId}/metrics`}>
             <Button variant="outline" size="sm">

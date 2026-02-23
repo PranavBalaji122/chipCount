@@ -19,7 +19,10 @@ const eslintConfig = [
     rules: {
       "@next/next/no-html-link-for-pages": "off"
     }
-  })
+  }),
+  {
+    ignores: [".next"]
+  }
 ]
 
 export default eslintConfig

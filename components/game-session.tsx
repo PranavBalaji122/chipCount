@@ -36,7 +36,7 @@ export function GameSession({
   game,
   initialPlayers,
   currentUserId,
-  isHost,
+  isHost: _initialIsHost,
   baseUrl
 }: {
   game: Game
@@ -52,9 +52,13 @@ export function GameSession({
   const [togglingClose, setTogglingClose] = useState(false)
   const [kicking, setKicking] = useState<string | null>(null)
   const [gameStatus, setGameStatus_] = useState(game.status)
+  const [hostId, setHostId] = useState(game.host_id)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
   const [transferring, setTransferring] = useState(false)
   const [transferConfirm, setTransferConfirm] = useState(false)
+
+  // Derive isHost reactively from hostId state so host transfers update the UI instantly
+  const isHost = hostId === currentUserId
 
   const origin =
     baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "")
@@ -85,6 +89,8 @@ export function GameSession({
     try {
       await transferHost(game.id, targetUserId)
       toast.success("Host transferred successfully")
+      // Update local state immediately so the UI flips without waiting for a poll/refresh
+      setHostId(targetUserId)
       setSelectedPlayer(null)
       setTransferConfirm(false)
       router.refresh()
@@ -102,11 +108,12 @@ export function GameSession({
     // Fetch current game status
     const { data: gameData } = await supabase
       .from("games")
-      .select("status")
+      .select("status, host_id")
       .eq("id", game.id)
       .single()
     if (gameData) {
       setGameStatus_(gameData.status as "active" | "closed" | "ended")
+      setHostId(gameData.host_id)
     }
 
     // Fetch current players

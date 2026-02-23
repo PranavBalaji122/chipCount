@@ -14,12 +14,19 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: memberships } = await supabase
+  const { data: membershipsRaw } = await supabase
     .from("game_players")
     .select("status, game:games!inner(id, short_code, description, status, host_id)")
     .eq("user_id", user.id)
     .neq("status", "pending")   // exclude people who requested but were never approved
     .in("games.status", ["active", "closed"])
+
+  // JS safety filter — exclude ended games even if the PostgREST filter above
+  // didn't apply (e.g. when filtering on a joined-table column is unreliable).
+  const memberships = membershipsRaw?.filter((m) => {
+    const game = Array.isArray(m.game) ? m.game[0] : m.game
+    return game && (game as { status: string }).status !== "ended"
+  })
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -27,7 +34,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>Dashboard</CardTitle>
           <CardDescription>
-            Start a new game, join one with a game ID, or check the leaderboard.
+            Start a new table, join one with a game ID, or check the leaderboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -38,9 +45,9 @@ export default async function DashboardPage() {
       {memberships && memberships.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Your active games</CardTitle>
+            <CardTitle>Your active tables</CardTitle>
             <CardDescription>
-              Quickly jump back into games you&apos;re hosting or playing in.
+              Quickly jump back into tables you&apos;re hosting or playing in.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -87,7 +94,7 @@ export default async function DashboardPage() {
                     {isHost && (
                       <form action={closeGame.bind(null, game.id)}>
                         <Button variant="destructive" size="sm" type="submit">
-                          Close Game
+                          End Game
                         </Button>
                       </form>
                     )}
