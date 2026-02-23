@@ -22,23 +22,23 @@ export default async function ProfileLayout({
           <Link href="/dashboard" className="font-semibold">
             ChipCount
           </Link>
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
-                <LayoutDashboard className="mr-1 h-4 w-4" />
-                Dashboard
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Dashboard</span>
               </Button>
             </Link>
             <Link href="/profile">
               <Button variant="ghost" size="sm">
-                <User className="mr-1 h-4 w-4" />
-                Profile
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Profile</span>
               </Button>
             </Link>
             <form action="/api/auth/signout" method="post">
               <Button type="submit" variant="ghost" size="sm">
-                <LogOut className="mr-1 h-4 w-4" />
-                Log out
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Log out</span>
               </Button>
             </form>
           </nav>

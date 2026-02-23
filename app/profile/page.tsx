@@ -19,7 +19,7 @@ export default async function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto max-w-lg px-4">
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">Profile not found. Try logging out and back in.</p>
@@ -30,7 +30,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto max-w-lg space-y-6 px-4">
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>

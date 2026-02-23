@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -40,6 +41,19 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       profile_public: profile.profile_public
     }
   })
+
+  // Auto-save logic
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => {
+        form.handleSubmit(onSubmit)()
+      }, 750)
+    })
+    return () => subscription.unsubscribe()
+  }, [form])
 
   async function onSubmit(values: ProfileValues) {
     const supabase = createClient()
@@ -180,10 +194,16 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save
-        </Button>
+        <div className="flex items-center pt-2 text-sm">
+          {form.formState.isSubmitting ? (
+            <div className="flex items-center text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </div>
+          ) : (
+            <span className="text-muted-foreground italic">Changes saved automatically</span>
+          )}
+        </div>
       </form>
     </Form>
   )

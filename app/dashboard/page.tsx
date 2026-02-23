@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8 px-4 py-6">
       <Card>
         <CardHeader>
           <CardTitle>Dashboard</CardTitle>
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={game.id}
-                  className={`flex items-center justify-between rounded border px-3 py-2 text-sm ${isDenied ? "border-red-500/20 bg-red-500/5 opacity-75" : ""
+                  className={`flex flex-col gap-2 rounded border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between ${isDenied ? "border-red-500/20 bg-red-500/5 opacity-75" : ""
                     }`}
                 >
                   <div>
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/game/${game.id}`}>Open</Link>
                     </Button>

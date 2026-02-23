@@ -52,8 +52,6 @@ export default async function PublicProfilePage({
               @{profile.venmo_handle}
             </a>
           )}
-          {profile.phone && <p className="text-sm">Phone: {profile.phone}</p>}
-          {profile.email && <p className="text-sm">Email: {profile.email}</p>}
           <NetProfitGraph userId={profile.id} />
         </CardContent>
       </Card>

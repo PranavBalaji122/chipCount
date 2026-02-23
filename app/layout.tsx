@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
@@ -13,6 +13,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "ChipCount",
   description: "Calculate Poker Payouts"
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1
 }
 
 export default function RootLayout({
