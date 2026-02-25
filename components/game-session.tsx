@@ -875,7 +875,7 @@ export function GameSession({
                 {/* Kick button — host only, not on self */}
                 {isHost && p.user_id !== currentUserId && (
                   <button
-                    className="ml-auto flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
+                    className="ml-auto flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
                     title="Remove player"
                     disabled={kicking === p.user_id}
                     onClick={() => handleKick(p.user_id)}
@@ -930,7 +930,7 @@ export function GameSession({
                       disabled={isClosed}
                     />
                     <button
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
                       title="Remove guest"
                       onClick={() => removeGuest(guest.id)}
                     >
@@ -947,7 +947,7 @@ export function GameSession({
 
             {/* Add guest form — host only */}
             {isHost && !isClosed && (
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 rounded border p-3 bg-zinc-500/5 border-zinc-500/20">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 rounded border p-3 bg-muted/20 border-muted/40">
                 <Input
                   className="flex-1 sm:flex-initial sm:w-32 min-w-0"
                   placeholder="Guest name"
@@ -1012,25 +1012,25 @@ export function GameSession({
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
           {/* Modal */}
-          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl p-6 space-y-5">
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border bg-background shadow-2xl p-6 space-y-5">
             {/* Header */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-lg font-semibold">
                 <Crown className="h-5 w-5 text-yellow-500" />
                 Player Actions
               </div>
-              <p className="text-zinc-400 text-sm">
+              <p className="text-muted-foreground text-sm">
                 {selectedPlayer.display_name || selectedPlayer.venmo_handle || selectedPlayer.user_id.slice(0, 8)}
               </p>
             </div>
 
             {/* Transfer Host section */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-3">
+            <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
               <div className="flex items-center gap-2 font-medium text-sm">
-                <ArrowRightLeft className="h-4 w-4 text-zinc-400" />
+                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
                 Transfer Host
               </div>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 This player will become the new host and gain full control of the game.
                 You will become a regular player.
               </p>

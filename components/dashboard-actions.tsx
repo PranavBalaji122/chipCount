@@ -6,8 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Play, LogIn, Trophy } from "lucide-react"
-import Link from "next/link"
+import { Loader2, Play, LogIn } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 
 export function DashboardActions() {
@@ -147,7 +146,7 @@ export function DashboardActions() {
           }}
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl p-6 space-y-5">
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border bg-background shadow-2xl p-6 space-y-5">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">New Table</h2>
               <p className="text-zinc-400 text-sm">Give your table a name so players know what they're joining.</p>
@@ -164,7 +163,7 @@ export function DashboardActions() {
                   onChange={(e) => setGameName(e.target.value)}
                   autoFocus
                   disabled={startLoading}
-                  className="bg-zinc-900 border-zinc-700"
+                  className="bg-muted/50"
                 />
               </div>
               {startError && <p className="text-destructive text-sm">{startError}</p>}
@@ -221,14 +220,6 @@ export function DashboardActions() {
         {joinError && <p className="text-destructive text-sm">{joinError}</p>}
       </form>
 
-      <div>
-        <Link href="/dashboard#leaderboard">
-          <Button variant="outline" className="w-full" size="lg">
-            <Trophy className="mr-2 h-4 w-4" />
-            Leaderboard
-          </Button>
-        </Link>
-      </div>
     </div>
   )
 }

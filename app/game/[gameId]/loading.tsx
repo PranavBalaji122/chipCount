@@ -37,7 +37,7 @@ export default function GameLoading() {
               </div>
             ))}
             {/* Add player form skeleton */}
-            <div className="flex flex-wrap items-center gap-2 rounded border p-3 bg-zinc-500/5 border-zinc-500/20">
+            <div className="flex flex-wrap items-center gap-2 rounded border p-3 bg-muted/20 border-muted/40">
               <Skeleton className="h-9 w-32" />
               <Skeleton className="h-9 w-24" />
               <Skeleton className="h-9 w-24" />

@@ -53,18 +53,18 @@ type SessionHistoryEntry = {
 
 const TOOLTIP_STYLE = {
     contentStyle: {
-        backgroundColor: "#18181b",
-        border: "1px solid #27272a",
+        backgroundColor: "hsl(var(--background))",
+        border: "1px solid hsl(var(--border))",
         borderRadius: "10px",
-        color: "#fafafa",
+        color: "hsl(var(--foreground))",
         fontSize: 13,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.5)"
+        boxShadow: "0 4px 24px hsl(var(--foreground) / 0.1)"
     },
-    itemStyle: { color: "#a1a1aa" },
-    labelStyle: { color: "#fafafa", fontWeight: 600, marginBottom: 2 }
+    itemStyle: { color: "hsl(var(--muted-foreground))" },
+    labelStyle: { color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 2 }
 }
 
-const TICK = { fontSize: 11, fill: "#71717a" }
+const TICK = { fontSize: 11, fill: "hsl(var(--muted-foreground))" }
 
 function yDomain(data: { net: number }[]): [number, number] {
     if (!data.length) return [-10, 10]
@@ -92,7 +92,7 @@ function NetBadge({ value }: { value: number }) {
             </span>
         )
     return (
-        <span className="flex items-center gap-1 text-zinc-500 font-semibold">
+        <span className="flex items-center gap-1 text-muted-foreground font-semibold">
             <Minus className="h-3.5 w-3.5" />
             $0
         </span>
@@ -119,7 +119,7 @@ function PlayerBarChart({
         <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barSize={36} barCategoryGap="40%">
-                    <CartesianGrid vertical={false} stroke="#27272a" strokeDasharray="4 4" />
+                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
                     <XAxis
                         dataKey="name"
                         tick={TICK}
@@ -138,10 +138,10 @@ function PlayerBarChart({
                     />
                     <Tooltip
                         formatter={(value: number) => [formatDollar(value), tooltipLabel]}
-                        cursor={{ fill: "#27272a", radius: 6 }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 6 }}
                         {...TOOLTIP_STYLE}
                     />
-                    <ReferenceLine y={0} stroke="#3f3f46" strokeWidth={1.5} />
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
                     <Bar dataKey="net" radius={[6, 6, 2, 2]}>
                         {data.map((entry, i) => (
                             <Cell
@@ -199,31 +199,31 @@ function SessionHistoryModal({
         >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-            <div className="relative z-10 w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl flex flex-col overflow-hidden">
+            <div className="relative z-10 w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] rounded-2xl border bg-background shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
                     {selectedSession ? (
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                             <button
                                 onClick={() => setSelectedSession(null)}
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                             </button>
                             <div className="min-w-0 flex-1">
                                 <h2 className="text-base sm:text-lg font-semibold truncate">Session Payouts</h2>
-                                <p className="text-xs sm:text-sm text-zinc-500 truncate">{selectedSession.label}</p>
+                                <p className="text-xs sm:text-sm text-muted-foreground truncate">{selectedSession.label}</p>
                             </div>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2">
-                            <History className="h-5 w-5 text-zinc-400" />
+                            <History className="h-5 w-5 text-muted-foreground" />
                             <h2 className="text-base sm:text-lg font-semibold">Session History</h2>
                         </div>
                     )}
                     <button
                         onClick={onClose}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition-colors ml-2"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ml-2"
                     >
                         <X className="h-4 w-4" />
                     </button>
@@ -245,12 +245,12 @@ function SessionHistoryModal({
                         {/* Search */}
                         <div className="px-4 sm:px-6 pb-3">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search sessions..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-9 bg-zinc-900 border-zinc-800 text-sm"
+                                    className="pl-9 bg-muted/50 text-sm"
                                 />
                             </div>
                         </div>
@@ -274,7 +274,7 @@ function SessionHistoryModal({
                                             <button
                                                 key={session.snapshotted_at}
                                                 onClick={() => setSelectedSession(session)}
-                                                className="w-full text-left rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 sm:p-4 hover:bg-zinc-800/80 hover:border-zinc-700 transition-colors active:bg-zinc-800"
+                                                className="w-full text-left rounded-xl border bg-muted/30 p-3 sm:p-4 hover:bg-muted/60 hover:border-foreground/20 transition-colors active:bg-muted/80"
                                             >
                                                 <div className="space-y-2">
                                                     {/* Top row - date and pot */}
@@ -289,21 +289,21 @@ function SessionHistoryModal({
                                                     
                                                     {/* Bottom row - player count and names */}
                                                     <div className="flex items-center justify-between">
-                                                        <p className="text-xs text-zinc-500">
+                                                        <p className="text-xs text-muted-foreground">
                                                             {session.players.length} player{session.players.length !== 1 ? "s" : ""}
                                                         </p>
                                                         <div className="flex flex-wrap gap-1 justify-end max-w-[60%] sm:max-w-[70%]">
                                                             {session.players.slice(0, 3).map((p) => (
                                                                 <span
                                                                     key={p.name}
-                                                                    className="text-xs text-zinc-500 bg-zinc-800 rounded px-1.5 py-0.5 truncate max-w-[60px] sm:max-w-[80px]"
+                                                                    className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 truncate max-w-[60px] sm:max-w-[80px]"
                                                                     title={p.name}
                                                                 >
                                                                     {p.name}
                                                                 </span>
                                                             ))}
                                                             {session.players.length > 3 && (
-                                                                <span className="text-xs text-zinc-600">
+                                                                <span className="text-xs text-muted-foreground/60">
                                                                     +{session.players.length - 3}
                                                                 </span>
                                                             )}
@@ -386,11 +386,11 @@ export function GameMetricsClient({
                     ].map(({ label, value, neutral }) => (
                         <Card key={label}>
                             <CardContent className="px-4 pt-4 pb-3">
-                                <p className="text-xs text-zinc-500 mb-1">{label}</p>
+                                <p className="text-xs text-muted-foreground mb-1">{label}</p>
                                 <p className={`text-xl font-bold tabular-nums ${neutral ? "text-foreground"
                                     : value > 0.01 ? "text-emerald-400"
                                         : value < -0.01 ? "text-red-400"
-                                            : "text-zinc-500"
+                                            : "text-muted-foreground"
                                     }`}>
                                     {formatDollar(value)}
                                 </p>
@@ -435,7 +435,7 @@ export function GameMetricsClient({
                                     barSize={36}
                                     barCategoryGap="40%"
                                 >
-                                    <CartesianGrid vertical={false} stroke="#27272a" strokeDasharray="4 4" />
+                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -451,10 +451,10 @@ export function GameMetricsClient({
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
                                             return pt ? pt.date : label
                                         }}
-                                        cursor={{ fill: "#27272a", radius: 6 }}
+                                        cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 6 }}
                                         {...TOOLTIP_STYLE}
                                     />
-                                    <ReferenceLine y={0} stroke="#3f3f46" strokeWidth={1.5} />
+                                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
                                     <Bar dataKey="net" radius={[6, 6, 2, 2]}>
                                         {sessionChartPoints.map((entry, i) => (
                                             <Cell key={i} fill={entry.net >= 0 ? "#22c55e" : "#ef4444"} />
@@ -482,7 +482,7 @@ export function GameMetricsClient({
                         <div className="h-[200px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={cumulativeChartPoints} margin={{ top: 8, right: 20, left: 0, bottom: 4 }}>
-                                    <CartesianGrid vertical={false} stroke="#27272a" strokeDasharray="4 4" />
+                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -498,10 +498,10 @@ export function GameMetricsClient({
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
                                             return pt ? pt.date : label
                                         }}
-                                        cursor={{ stroke: "#3f3f46", strokeWidth: 1.5 }}
+                                        cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1.5 }}
                                         {...TOOLTIP_STYLE}
                                     />
-                                    <ReferenceLine y={0} stroke="#3f3f46" strokeWidth={1.5} />
+                                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
                                     <Line
                                         type="monotone"
                                         dataKey="net"
@@ -518,12 +518,12 @@ export function GameMetricsClient({
                                                     cy={cy}
                                                     r={5}
                                                     fill={c}
-                                                    stroke="#18181b"
+                                                    stroke="hsl(var(--background))"
                                                     strokeWidth={2}
                                                 />
                                             )
                                         }}
-                                        activeDot={{ r: 7, fill: lineColor, stroke: "#18181b", strokeWidth: 2 }}
+                                        activeDot={{ r: 7, fill: lineColor, stroke: "hsl(var(--background))", strokeWidth: 2 }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -550,19 +550,19 @@ export function GameMetricsClient({
                                     <div
                                         key={p.user_id}
                                         className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors ${p.user_id === currentUserId
-                                            ? "bg-emerald-500/10 border border-emerald-500/20"
-                                            : "bg-zinc-900/60"
+                                            ? "bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20"
+                                            : "bg-muted/40 dark:bg-muted/60"
                                             } ${p.was_kicked ? "opacity-60" : ""}`}
                                     >
                                         <span className="flex items-center gap-2.5">
-                                            <span className="text-zinc-600 text-xs w-5 tabular-nums">#{i + 1}</span>
+                                            <span className="text-muted-foreground text-xs w-5 tabular-nums">#{i + 1}</span>
                                             <span className="font-medium">
                                                 {p.display_name || p.venmo_handle || p.user_id.slice(0, 8)}
                                                 {p.user_id === currentUserId && (
                                                     <span className="ml-2 text-xs text-emerald-500 font-normal">you</span>
                                                 )}
                                                 {p.was_kicked && (
-                                                    <span className="ml-2 text-xs text-zinc-500 font-normal">removed</span>
+                                                    <span className="ml-2 text-xs text-muted-foreground font-normal">removed</span>
                                                 )}
                                             </span>
                                         </span>
