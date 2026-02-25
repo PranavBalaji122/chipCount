@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import {
     LineChart,
     Line,
@@ -14,8 +15,12 @@ import {
     ReferenceLine
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import { formatDollar } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { PayoutStatsView } from "./payout-stats-view"
+import { TrendingUp, TrendingDown, Minus, History, Search, ArrowLeft, X } from "lucide-react"
+import { formatDollar, calcPayouts } from "@/lib/utils"
+import type { GameSchema } from "@/lib/schemas"
 
 type SessionPlayer = {
     user_id: string
@@ -39,6 +44,12 @@ type StandingsPlayer = {
 }
 
 type SessionChartPoint = { label: string; date: string; net: number }
+
+type SessionHistoryEntry = {
+    snapshotted_at: string
+    label: string
+    players: { name: string; cashIn: number; cashOut: number }[]
+}
 
 const TOOLTIP_STYLE = {
     contentStyle: {
@@ -148,19 +159,186 @@ function PlayerBarChart({
     )
 }
 
+function SessionHistoryModal({
+    sessions,
+    onClose
+}: {
+    sessions: SessionHistoryEntry[]
+    onClose: () => void
+}) {
+    const [search, setSearch] = useState("")
+    const [selectedSession, setSelectedSession] = useState<SessionHistoryEntry | null>(null)
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return sessions
+        const q = search.toLowerCase()
+        return sessions.filter((s) =>
+            s.label.toLowerCase().includes(q) ||
+            s.players.some((p) => p.name.toLowerCase().includes(q))
+        )
+    }, [sessions, search])
+
+    const selectedPayout = useMemo(() => {
+        if (!selectedSession || selectedSession.players.length < 2) return null
+        const gameData: GameSchema = {
+            players: selectedSession.players.map((p) => ({
+                name: p.name,
+                cashIn: p.cashIn,
+                cashOut: p.cashOut,
+            })),
+        }
+        return calcPayouts(gameData)
+    }, [selectedSession])
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose()
+            }}
+        >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+            <div className="relative z-10 w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
+                    {selectedSession ? (
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                            <button
+                                onClick={() => setSelectedSession(null)}
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-base sm:text-lg font-semibold truncate">Session Payouts</h2>
+                                <p className="text-xs sm:text-sm text-zinc-500 truncate">{selectedSession.label}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <History className="h-5 w-5 text-zinc-400" />
+                            <h2 className="text-base sm:text-lg font-semibold">Session History</h2>
+                        </div>
+                    )}
+                    <button
+                        onClick={onClose}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition-colors ml-2"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                {selectedSession ? (
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
+                        {selectedPayout ? (
+                            <PayoutStatsView payout={selectedPayout} />
+                        ) : (
+                            <p className="text-muted-foreground text-sm py-8 text-center">
+                                Not enough players to compute payouts.
+                            </p>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        {/* Search */}
+                        <div className="px-4 sm:px-6 pb-3">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    placeholder="Search sessions..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-9 bg-zinc-900 border-zinc-800 text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Session list */}
+                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
+                            {filtered.length === 0 ? (
+                                <p className="text-muted-foreground text-sm py-8 text-center px-2">
+                                    {sessions.length === 0
+                                        ? "No sessions recorded yet. Close a session to save history."
+                                        : "No sessions match your search."}
+                                </p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {[...filtered].reverse().map((session) => {
+                                        const totalIn = session.players.reduce((s, p) => s + p.cashIn, 0)
+                                        const totalOut = session.players.reduce((s, p) => s + p.cashOut, 0)
+                                        const pot = totalIn + totalOut
+
+                                        return (
+                                            <button
+                                                key={session.snapshotted_at}
+                                                onClick={() => setSelectedSession(session)}
+                                                className="w-full text-left rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 sm:p-4 hover:bg-zinc-800/80 hover:border-zinc-700 transition-colors active:bg-zinc-800"
+                                            >
+                                                <div className="space-y-2">
+                                                    {/* Top row - date and pot */}
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="font-medium text-sm sm:text-base">{session.label}</p>
+                                                        {pot > 0 && (
+                                                            <p className="text-xs sm:text-sm text-emerald-400 font-medium">
+                                                                {formatDollar(pot)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Bottom row - player count and names */}
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-xs text-zinc-500">
+                                                            {session.players.length} player{session.players.length !== 1 ? "s" : ""}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1 justify-end max-w-[60%] sm:max-w-[70%]">
+                                                            {session.players.slice(0, 3).map((p) => (
+                                                                <span
+                                                                    key={p.name}
+                                                                    className="text-xs text-zinc-500 bg-zinc-800 rounded px-1.5 py-0.5 truncate max-w-[60px] sm:max-w-[80px]"
+                                                                    title={p.name}
+                                                                >
+                                                                    {p.name}
+                                                                </span>
+                                                            ))}
+                                                            {session.players.length > 3 && (
+                                                                <span className="text-xs text-zinc-600">
+                                                                    +{session.players.length - 3}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    )
+}
+
 export function GameMetricsClient({
     sessionPlayers,
     standingsPlayers,
     sessionChartPoints,
     cumulativeChartPoints,
+    sessionHistory,
     currentUserId
 }: {
     sessionPlayers: SessionPlayer[]
     standingsPlayers: StandingsPlayer[]
     sessionChartPoints: SessionChartPoint[]
     cumulativeChartPoints: SessionChartPoint[]
+    sessionHistory: SessionHistoryEntry[]
     currentUserId: string
 }) {
+    const [historyOpen, setHistoryOpen] = useState(false)
     const me = sessionPlayers.find((p) => p.user_id === currentUserId)
 
     const sessionBarData = sessionPlayers.map((p) => ({
@@ -178,12 +356,25 @@ export function GameMetricsClient({
     const sessionDomain = yDomain(sessionChartPoints)
     const cumDomain = yDomain(cumulativeChartPoints)
 
-    // Line color is based on the final cumulative value
     const finalCumNet = cumulativeChartPoints[cumulativeChartPoints.length - 1]?.net ?? 0
     const lineColor = finalCumNet >= 0 ? "#22c55e" : "#ef4444"
 
     return (
         <div className="space-y-5">
+            {/* Session History button */}
+            <div className="flex justify-end">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setHistoryOpen(true)}
+                    className="min-h-[44px] px-4"
+                >
+                    <History className="mr-1.5 h-4 w-4" />
+                    <span className="hidden sm:inline">Session History</span>
+                    <span className="sm:hidden">History</span>
+                </Button>
+            </div>
+
             {/* Stat cards */}
             {me && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -228,7 +419,7 @@ export function GameMetricsClient({
             <Card>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-base">Your Profit Per Session</CardTitle>
-                    <CardDescription>Net for each time the host closed this table</CardDescription>
+                    <CardDescription>Net profit recorded each time the host closes the session</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {sessionChartPoints.length === 0 ? (
@@ -258,7 +449,7 @@ export function GameMetricsClient({
                                         formatter={(value: number) => [formatDollar(value), "Session Net"]}
                                         labelFormatter={(label, payload) => {
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
-                                            return pt ? `${label} · ${pt.date}` : label
+                                            return pt ? pt.date : label
                                         }}
                                         cursor={{ fill: "#27272a", radius: 6 }}
                                         {...TOOLTIP_STYLE}
@@ -305,7 +496,7 @@ export function GameMetricsClient({
                                         formatter={(value: number) => [formatDollar(value), "Cumulative Net"]}
                                         labelFormatter={(label, payload) => {
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
-                                            return pt ? `${label} · ${pt.date}` : label
+                                            return pt ? pt.date : label
                                         }}
                                         cursor={{ stroke: "#3f3f46", strokeWidth: 1.5 }}
                                         {...TOOLTIP_STYLE}
@@ -382,6 +573,14 @@ export function GameMetricsClient({
                     )}
                 </CardContent>
             </Card>
+
+            {/* Session History Modal */}
+            {historyOpen && (
+                <SessionHistoryModal
+                    sessions={sessionHistory}
+                    onClose={() => setHistoryOpen(false)}
+                />
+            )}
         </div>
     )
 }
