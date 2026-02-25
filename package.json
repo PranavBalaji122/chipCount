@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "format": "prettier --write .",
-    "lint": "next lint",
+    "lint": "eslint .",
     "lint:format": "bun run format && bun run lint",
     "test": "vitest run"
   },

@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { GameMetricsClient } from "@/components/game-metrics-client"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function GameMetricsPage({
     params
@@ -128,12 +130,17 @@ export default async function GameMetricsPage({
 
     return (
         <div className="mx-auto max-w-4xl space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">{game.description || "Game"} — Metrics</h1>
-                <p className="text-muted-foreground text-sm">
-                    Game ID: <span className="font-mono">{game.short_code}</span> ·{" "}
-                    <span className="capitalize">{game.status}</span>
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">{game.description || "Game"} — Metrics</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Game ID: <span className="font-mono">{game.short_code}</span> ·{" "}
+                        <span className="capitalize">{game.status}</span>
+                    </p>
+                </div>
+                <Button asChild>
+                    <Link href={`/game/${gameId}/metrics/history`}>Session History</Link>
+                </Button>
             </div>
 
             <GameMetricsClient
