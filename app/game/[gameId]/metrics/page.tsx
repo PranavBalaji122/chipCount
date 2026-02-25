@@ -38,38 +38,42 @@ export default async function GameMetricsPage({
     } = await supabase.auth.getUser()
     if (!user) notFound()
 
-    const { data: game } = await supabase
-        .from("games")
-        .select("id, short_code, description, status, host_id")
-        .eq("id", gameId)
-        .single()
+    // Run ALL queries in parallel for maximum speed
+    const [gameResult, approvedPlayersResult, allPlayersResult, snapshotsResult, guestSnapshotsResult] = await Promise.all([
+        supabase
+            .from("games")
+            .select("id, short_code, description, status, host_id")
+            .eq("id", gameId)
+            .single(),
+        supabase
+            .from("game_players")
+            .select("user_id, cash_in, cash_out, profile:profiles(display_name, venmo_handle)")
+            .eq("game_id", gameId)
+            .eq("status", "approved"),
+        supabase
+            .from("game_players")
+            .select("user_id, status, profile:profiles(display_name, venmo_handle)")
+            .eq("game_id", gameId)
+            .neq("status", "pending"),
+        supabase
+            .from("session_snapshots")
+            .select("user_id, cash_in, cash_out, session_net, snapshotted_at")
+            .eq("game_id", gameId)
+            .order("snapshotted_at", { ascending: true }),
+        supabase
+            .from("guest_session_snapshots")
+            .select("guest_name, cash_in, cash_out, session_net, snapshotted_at")
+            .eq("game_id", gameId)
+            .order("snapshotted_at", { ascending: true })
+    ])
+
+    const { data: game } = gameResult
+    const { data: approvedPlayers } = approvedPlayersResult
+    const { data: allPlayers } = allPlayersResult
+    const { data: snapshots } = snapshotsResult
+    const { data: guestSnapshots } = guestSnapshotsResult
+
     if (!game) notFound()
-
-    const { data: approvedPlayers } = await supabase
-        .from("game_players")
-        .select("user_id, cash_in, cash_out, profile:profiles(display_name, venmo_handle)")
-        .eq("game_id", gameId)
-        .eq("status", "approved")
-
-    const { data: allPlayers } = await supabase
-        .from("game_players")
-        .select("user_id, status, profile:profiles(display_name, venmo_handle)")
-        .eq("game_id", gameId)
-        .neq("status", "pending")
-
-    // Fetch player snapshots with actual cash_in/cash_out
-    const { data: snapshots } = await supabase
-        .from("session_snapshots")
-        .select("user_id, cash_in, cash_out, session_net, snapshotted_at")
-        .eq("game_id", gameId)
-        .order("snapshotted_at", { ascending: true })
-
-    // Fetch guest snapshots
-    const { data: guestSnapshots } = await supabase
-        .from("guest_session_snapshots")
-        .select("guest_name, cash_in, cash_out, session_net, snapshotted_at")
-        .eq("game_id", gameId)
-        .order("snapshotted_at", { ascending: true })
 
     const allSnapshots = snapshots ?? []
     const allGuestSnapshots = guestSnapshots ?? []
@@ -180,6 +184,8 @@ export default async function GameMetricsPage({
                 was_kicked: p.status === "denied"
             }
         })
+        .sort((a, b) => b.game_net - a.game_net) // Sort by net profit descending
+        .slice(0, 3) // Take only top 3
 
     return (
         <div className="mx-auto max-w-4xl space-y-6">

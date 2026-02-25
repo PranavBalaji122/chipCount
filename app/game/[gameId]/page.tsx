@@ -19,22 +19,27 @@ export default async function GamePage({
     notFound()
   }
 
-  const { data: game, error: gameError } = await supabase
-    .from("games")
-    .select("id, short_code, host_id, description, status")
-    .eq("id", gameId)
-    .single()
+  // Run game and players queries in parallel
+  const [gameResult, playersResult] = await Promise.all([
+    supabase
+      .from("games")
+      .select("id, short_code, host_id, description, status")
+      .eq("id", gameId)
+      .single(),
+    supabase
+      .from("game_players")
+      .select(
+        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
+      )
+      .eq("game_id", gameId)
+  ])
+
+  const { data: game, error: gameError } = gameResult
+  const { data: rawPlayers, error: playersError } = playersResult
 
   if (gameError || !game) {
     notFound()
   }
-
-  const { data: rawPlayers, error: playersError } = await supabase
-    .from("game_players")
-    .select(
-      "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
-    )
-    .eq("game_id", gameId)
 
   if (playersError) {
     console.error("Error fetching players:", playersError)

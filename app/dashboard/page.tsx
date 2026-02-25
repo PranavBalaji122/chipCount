@@ -2,10 +2,13 @@ import { closeGame } from "@/lib/actions"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardActions } from "@/components/dashboard-actions"
-import { Leaderboard } from "@/components/leaderboard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+
+// Add short cache for faster back/forward navigation
+export const dynamic = 'force-dynamic'
+export const revalidate = 30  // 30 seconds
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -14,15 +17,14 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  // Get user's game memberships
   const { data: membershipsRaw } = await supabase
     .from("game_players")
     .select("status, game:games!inner(id, short_code, description, status, host_id)")
     .eq("user_id", user.id)
-    .neq("status", "pending")   // exclude people who requested but were never approved
+    .neq("status", "pending")
     .in("games.status", ["active", "closed"])
 
-  // JS safety filter — exclude ended games even if the PostgREST filter above
-  // didn't apply (e.g. when filtering on a joined-table column is unreliable).
   const memberships = membershipsRaw?.filter((m) => {
     const game = Array.isArray(m.game) ? m.game[0] : m.game
     return game && (game as { status: string }).status !== "ended"
@@ -34,7 +36,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>Dashboard</CardTitle>
           <CardDescription>
-            Start a new table, join one with a game ID, or check the leaderboard.
+            Start a new table or join one with a game ID.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,7 +91,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button asChild size="sm" variant="outline">
-                      <Link href={`/game/${game.id}`}>Open</Link>
+                      <Link href={`/game/${game.id}`} prefetch={true}>Open</Link>
                     </Button>
                     {isHost && (
                       <form action={closeGame.bind(null, game.id)}>
@@ -106,7 +108,6 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <Leaderboard />
     </div>
   )
 }

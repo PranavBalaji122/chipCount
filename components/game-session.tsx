@@ -294,8 +294,8 @@ export function GameSession({
       )
       .subscribe()
 
-    // Polling fallback — guarantees updates every 4s even if realtime/RLS blocks events
-    const pollInterval = setInterval(() => fetchAll(), 4000)
+    // Polling fallback — reduced to 10s for better performance
+    const pollInterval = setInterval(() => fetchAll(), 10000)
 
     return () => {
       supabase.removeChannel(playersChannel)

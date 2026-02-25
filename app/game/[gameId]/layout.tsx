@@ -60,7 +60,7 @@ export default async function GameLayout({
               </span>
             )}
           </div>
-          <Link href={`/game/${gameId}/metrics`}>
+          <Link href={`/game/${gameId}/metrics`} prefetch={true}>
             <Button variant="outline" size="sm">
               <BarChart2 className="mr-1.5 h-4 w-4" />
               Metrics

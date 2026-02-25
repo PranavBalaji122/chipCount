@@ -10,13 +10,13 @@ export async function Leaderboard() {
     .select("id, display_name, net_profit")
     .eq("profile_public", true)
     .order("net_profit", { ascending: false })
-    .limit(10)
+    .limit(3)
 
   return (
     <Card id="leaderboard">
       <CardHeader>
         <CardTitle>Leaderboard</CardTitle>
-        <CardDescription>Top 10 by net profit (public profiles only)</CardDescription>
+        <CardDescription>Top 3 by net profit (public profiles only)</CardDescription>
       </CardHeader>
       <CardContent>
         {!profiles?.length ? (
