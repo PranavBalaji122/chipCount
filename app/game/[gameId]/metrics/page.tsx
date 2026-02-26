@@ -85,7 +85,7 @@ export default async function GameMetricsPage({
     for (const p of (allPlayers ?? []) as { user_id: string; profile: RawProfile | RawProfile[] }[]) {
         const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
         const name = prof?.venmo_handle
-            ? `@${prof.venmo_handle}`
+            ? `@${prof.display_name}`
             : prof?.display_name || p.user_id.slice(0, 8)
         userNameMap.set(p.user_id, name)
     }
