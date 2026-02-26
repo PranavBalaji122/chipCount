@@ -455,15 +455,15 @@ export function GameSession({
       await setGameStatus(game.id, newStatus)
       setGameStatus_(newStatus)
       
-      // When reopening: clear all player amounts locally so the UI starts fresh
+      // When reopening: zero out all player amounts locally so the UI starts fresh
       if (newStatus === "active") {
         setPlayers(prev =>
           prev.map(p => ({
             ...p,
-            cash_in: null,
-            cash_out: null,
-            requested_cash_in: null,
-            requested_cash_out: null,
+            cash_in: 0,
+            cash_out: 0,
+            requested_cash_in: 0,
+            requested_cash_out: 0,
           }))
         )
         

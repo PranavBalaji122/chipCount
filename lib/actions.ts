@@ -61,16 +61,16 @@ export async function setGameStatus(
     return
   }
 
-  // When reopening: clear all player cash amounts BEFORE updating game status
+  // When reopening: zero out all player cash amounts BEFORE updating game status
   // This prevents race conditions with real-time subscriptions
   if (status === "active") {
     const { error: clearError } = await supabase
       .from("game_players")
       .update({
-        cash_in: null,
-        cash_out: null,
-        requested_cash_in: null,
-        requested_cash_out: null,
+        cash_in: 0,
+        cash_out: 0,
+        requested_cash_in: 0,
+        requested_cash_out: 0,
       })
       .eq("game_id", gameId)
     
