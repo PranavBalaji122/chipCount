@@ -13,9 +13,7 @@ export default function MetricsLoading() {
       </div>
 
       {/* Session History button */}
-      <div className="flex justify-end">
-        <Skeleton className="h-9 w-32" />
-      </div>
+  
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
