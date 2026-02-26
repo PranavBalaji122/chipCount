@@ -542,41 +542,43 @@ export function GameSession({
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
+        <CardHeader className="space-y-4">
+          <div className="flex items-center justify-between">
             <CardTitle>{game.description || "Game"}</CardTitle>
+            <Button variant="outline" size="sm">
+              Session History
+            </Button>
+          </div>
+          <div className="flex items-center justify-between">
             <CardDescription>
               Game ID: <span className="font-mono">{game.short_code}</span> — share so others can join
               <br />
               Invite link:{" "}
               <span className="font-mono break-all">{inviteUrl}</span>
             </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              Session History
-            </Button>
-            {isHost && (
-              <Button
-                variant={isClosed ? "outline" : "secondary"}
-                size="sm"
-                onClick={handleToggleClose}
-                disabled={togglingClose}
-              >
-                {togglingClose ? (
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : isClosed ? (
-                  <LockOpen className="mr-1 h-4 w-4" />
-                ) : (
-                  <Lock className="mr-1 h-4 w-4" />
-                )}
-                {isClosed ? "Reopen Session" : "Close Session"}
+            <div className="flex items-center gap-2">
+              {isHost && (
+                <Button
+                  variant={isClosed ? "outline" : "secondary"}
+                  size="sm"
+                  onClick={handleToggleClose}
+                  disabled={togglingClose}
+                >
+                  {togglingClose ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : isClosed ? (
+                    <LockOpen className="mr-1 h-4 w-4" />
+                  ) : (
+                    <Lock className="mr-1 h-4 w-4" />
+                  )}
+                  {isClosed ? "Reopen Session" : "Close Session"}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={copyGameLink}>
+                <Copy className="mr-1 h-4 w-4" />
+                Copy link
               </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={copyGameLink}>
-              <Copy className="mr-1 h-4 w-4" />
-              Copy link
-            </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

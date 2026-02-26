@@ -24,16 +24,20 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
     let destructive: string
     let muted: string
     if (typeof window === "undefined") {
-      success = "#22c55e"
-      destructive = "#ef4444"
-      muted = "#71717a"
+      // Server-side fallback colors
+      success = "hsl(150 60% 50%)"
+      destructive = "hsl(0 84% 60%)"
+      muted = "hsl(215 16% 47%)"
     } else {
       const rootStyles = window.getComputedStyle(document.documentElement)
-      success = rootStyles.getPropertyValue("--color-success").trim() || "#22c55e"
-      destructive =
-        rootStyles.getPropertyValue("--color-destructive").trim() || "#ef4444"
-      muted =
-        rootStyles.getPropertyValue("--muted-foreground").trim() || "#71717a"
+      // Get CSS custom property values and convert to hsl
+      const successVar = rootStyles.getPropertyValue("--success").trim()
+      const destructiveVar = rootStyles.getPropertyValue("--destructive").trim()
+      const mutedVar = rootStyles.getPropertyValue("--muted-foreground").trim()
+      
+      success = successVar ? `hsl(${successVar})` : "hsl(150 60% 50%)"
+      destructive = destructiveVar ? `hsl(${destructiveVar})` : "hsl(0 84% 60%)"
+      muted = mutedVar ? `hsl(${mutedVar})` : "hsl(215 16% 47%)"
     }
     return chroma
       .scale([success, muted, destructive])
@@ -88,7 +92,8 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
           nameKey="name"
           outerRadius={100}
           innerRadius={90}
-          strokeWidth={1}
+          strokeWidth={2}
+          stroke="hsl(var(--background))"
           paddingAngle={5}
         >
           <LabelList
@@ -106,6 +111,8 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
           nameKey="name"
           outerRadius={80}
           innerRadius={totalPot < 100 ? 50 : totalPot < 1000 ? 60 : 63.5}
+          strokeWidth={2}
+          stroke="hsl(var(--background))"
           paddingAngle={5}
         >
           {Math.abs(payout.slippage) < 1e-9 && (

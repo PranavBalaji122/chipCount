@@ -11,16 +11,16 @@ export function PayoutStatsView({ payout }: { payout: PayoutSchema }) {
   const sorted = { ...payout, players: [...payout.players].sort((a, b) => a.name.localeCompare(b.name)) }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {Math.abs(sorted.slippage) > 1e-9 && <SlippageInfo payout={sorted} />}
 
-      <Card className="bg-secondary">
-        <CardContent className="flex w-full flex-col justify-around gap-5 md:flex-row">
+      <Card className="bg-card border-border">
+        <CardContent className="flex w-full flex-col justify-around gap-5 md:flex-row p-6">
           <DonutCharts payout={sorted} />
           <NegativeChart players={sorted.players} />
         </CardContent>
       </Card>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {sorted.players.map((player) => (
           <PlayerSummary
             key={player.name}

@@ -14,9 +14,9 @@ import { IoLogoVenmo } from "react-icons/io5"
 import { SiCashapp } from "react-icons/si"
 
 const Stat = ({ label, value: val }: { label: string; value: number }) => (
-  <div className="bg-secondary flex w-full flex-col items-center justify-center rounded-sm py-1.5 transition-all">
-    <p>{label}</p>
-    <p className="font-bold">{formatDollar(val)}</p>
+  <div className="bg-muted/50 border border-border flex w-full flex-col items-center justify-center rounded-md py-2 px-3 transition-all">
+    <p className="text-xs text-muted-foreground font-medium">{label}</p>
+    <p className="font-bold text-foreground">{formatDollar(val)}</p>
   </div>
 )
 

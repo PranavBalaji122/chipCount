@@ -119,7 +119,7 @@ function PlayerBarChart({
         <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barSize={36} barCategoryGap="40%">
-                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
                     <XAxis
                         dataKey="name"
                         tick={TICK}
@@ -147,9 +147,9 @@ function PlayerBarChart({
                             <Cell
                                 key={i}
                                 fill={entry.isMe
-                                    ? entry.net >= 0 ? "#22c55e" : "#ef4444"
-                                    : entry.net >= 0 ? "#16a34a" : "#b91c1c"}
-                                opacity={entry.isMe ? 1 : 0.5}
+                                    ? entry.net >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"
+                                    : entry.net >= 0 ? "hsl(var(--success) / 0.7)" : "hsl(var(--destructive) / 0.7)"}
+                                opacity={entry.isMe ? 1 : 0.6}
                             />
                         ))}
                     </Bar>
@@ -384,12 +384,12 @@ export function GameMetricsClient({
                         { label: "Session Net", value: me.session_net },
                         { label: "Game Net", value: me.game_net }
                     ].map(({ label, value, neutral }) => (
-                        <Card key={label}>
+                        <Card key={label} className="bg-card/50 border-border/50 hover:bg-card/80 transition-colors">
                             <CardContent className="px-4 pt-4 pb-3">
-                                <p className="text-xs text-muted-foreground mb-1">{label}</p>
+                                <p className="text-xs text-muted-foreground font-medium mb-2">{label}</p>
                                 <p className={`text-xl font-bold tabular-nums ${neutral ? "text-foreground"
-                                    : value > 0.01 ? "text-emerald-400"
-                                        : value < -0.01 ? "text-red-400"
+                                    : value > 0.01 ? "text-green-500 dark:text-green-400"
+                                        : value < -0.01 ? "text-red-500 dark:text-red-400"
                                             : "text-muted-foreground"
                                     }`}>
                                     {formatDollar(value)}
@@ -401,8 +401,8 @@ export function GameMetricsClient({
             )}
 
             {/* Current session */}
-            <Card>
-                <CardHeader className="pb-2">
+            <Card className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
                     <CardTitle className="text-base">Current Session</CardTitle>
                     <CardDescription>Live net profit / loss per player</CardDescription>
                 </CardHeader>
@@ -416,8 +416,8 @@ export function GameMetricsClient({
             </Card>
 
             {/* Per-session profit bars */}
-            <Card>
-                <CardHeader className="pb-2">
+            <Card className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
                     <CardTitle className="text-base">Your Profit Per Session</CardTitle>
                     <CardDescription>Net profit recorded each time the host closes the session</CardDescription>
                 </CardHeader>
@@ -435,7 +435,7 @@ export function GameMetricsClient({
                                     barSize={36}
                                     barCategoryGap="40%"
                                 >
-                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -457,7 +457,7 @@ export function GameMetricsClient({
                                     <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
                                     <Bar dataKey="net" radius={[6, 6, 2, 2]}>
                                         {sessionChartPoints.map((entry, i) => (
-                                            <Cell key={i} fill={entry.net >= 0 ? "#22c55e" : "#ef4444"} />
+                                            <Cell key={i} fill={entry.net >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -468,8 +468,8 @@ export function GameMetricsClient({
             </Card>
 
             {/* Cumulative line */}
-            <Card>
-                <CardHeader className="pb-2">
+            <Card className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
                     <CardTitle className="text-base">Cumulative Profit — This Game</CardTitle>
                     <CardDescription>Running total across all closed sessions</CardDescription>
                 </CardHeader>
@@ -482,7 +482,7 @@ export function GameMetricsClient({
                         <div className="h-[200px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={cumulativeChartPoints} margin={{ top: 8, right: 20, left: 0, bottom: 4 }}>
-                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -510,7 +510,7 @@ export function GameMetricsClient({
                                         dot={(props) => {
                                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                             const { cx, cy, payload } = props as any
-                                            const c = (payload.net ?? 0) >= 0 ? "#22c55e" : "#ef4444"
+                                            const c = (payload.net ?? 0) >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"
                                             return (
                                                 <circle
                                                     key={payload.label}

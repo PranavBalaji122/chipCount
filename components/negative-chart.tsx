@@ -32,7 +32,7 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
                 : "var(--muted-foreground)"
         }))}
       >
-        <CartesianGrid vertical={false} />
+        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
         <ChartTooltip
           cursor={false}
           content={
@@ -43,11 +43,19 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
           }
         />
         <Bar dataKey="net">
-          <LabelList position="bottom" dataKey="displayName" fillOpacity={1} />
+          <LabelList 
+            position="bottom" 
+            dataKey="displayName" 
+            fillOpacity={1} 
+            fill="hsl(var(--foreground))"
+            fontSize={12}
+          />
           <LabelList
             position="top"
             dataKey="net"
             fillOpacity={1}
+            fill="hsl(var(--foreground))"
+            fontSize={12}
             formatter={(val: number) => formatDollar(val)}
           />
           {players.map((item) => (
