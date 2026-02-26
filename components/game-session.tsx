@@ -1073,7 +1073,12 @@ export function GameSession({
 
       {payout && (
         <>
-          <h2 className="text-lg font-semibold">Payout summary</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Payout summary</h2>
+            <Button variant="outline" size="sm">
+              Session History
+            </Button>
+          </div>
           <PayoutStatsView payout={payout} />
         </>
       )}
