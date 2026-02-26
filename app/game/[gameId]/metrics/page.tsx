@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { GameMetricsClient } from "@/components/game-metrics-client"
+import { Button } from "@/components/ui/button"
 
 function formatSessionDate(iso: string): string {
     const d = new Date(iso)
@@ -197,6 +198,9 @@ export default async function GameMetricsPage({
                         <span className="capitalize">{game.status}</span>
                     </p>
                 </div>
+                <Button variant="outline" size="sm">
+                    Session History
+                </Button>
             </div>
 
             <GameMetricsClient
