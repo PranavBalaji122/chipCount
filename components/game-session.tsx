@@ -466,6 +466,11 @@ export function GameSession({
             requested_cash_out: null,
           }))
         )
+        
+        // Force a fresh fetch after a short delay to ensure server changes are applied
+        setTimeout(() => {
+          fetchAll()
+        }, 500)
       }
       
       toast.success(isClosed ? "Session reopened" : "Session closed — edits are locked")
@@ -669,24 +674,6 @@ export function GameSession({
                     <span className="text-muted-foreground ml-1 text-sm">(denied)</span>
                   )}
                 </span>
-                {/* Host can re-approve a denied player */}
-                {isHost && p.status === "denied" && p.user_id !== currentUserId && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={updating === p.user_id}
-                    onClick={() =>
-                      updatePlayerFields(game.id, p.user_id, { status: "approved" })
-                    }
-                  >
-                    {updating === p.user_id ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="mr-1 h-3.5 w-3.5" />
-                    )}
-                    Approve
-                  </Button>
-                )}
                 {p.status === "approved" && (
                   <>
                     {/* Host controls: always editable, even when session is closed */}
@@ -964,18 +951,31 @@ export function GameSession({
                   </div>
                 )}
 
-                {/* Kick button — host only, not on self */}
+                {/* Action button — host only, not on self */}
                 {isHost && p.user_id !== currentUserId && (
                   <button
-                    className="ml-auto flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors disabled:opacity-40"
-                    title="Remove player"
-                    disabled={kicking === p.user_id}
-                    onClick={() => handleKick(p.user_id)}
+                    className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
+                      p.status === "denied"
+                        ? "text-muted-foreground hover:bg-green-500/10 hover:text-green-500"
+                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                    }`}
+                    title={p.status === "denied" ? "Approve player" : "Remove player"}
+                    disabled={kicking === p.user_id || updating === p.user_id}
+                    onClick={() => {
+                      if (p.status === "denied") {
+                        updatePlayerFields(game.id, p.user_id, { status: "approved" })
+                      } else {
+                        handleKick(p.user_id)
+                      }
+                    }}
                   >
-                    {kicking === p.user_id
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <X className="h-3.5 w-3.5" />
-                    }
+                    {(kicking === p.user_id || updating === p.user_id) ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : p.status === "denied" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
                   </button>
                 )}
               </div>

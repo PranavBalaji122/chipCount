@@ -61,16 +61,10 @@ export async function setGameStatus(
     return
   }
 
-  const { error } = await supabase
-    .from("games")
-    .update({ status })
-    .eq("id", gameId)
-
-  if (error) throw new Error(error.message)
-
-  // When reopening: clear all player cash amounts so the new session starts fresh
+  // When reopening: clear all player cash amounts BEFORE updating game status
+  // This prevents race conditions with real-time subscriptions
   if (status === "active") {
-    await supabase
+    const { error: clearError } = await supabase
       .from("game_players")
       .update({
         cash_in: null,
@@ -79,7 +73,16 @@ export async function setGameStatus(
         requested_cash_out: null,
       })
       .eq("game_id", gameId)
+    
+    if (clearError) throw new Error(clearError.message)
   }
+
+  const { error } = await supabase
+    .from("games")
+    .update({ status })
+    .eq("id", gameId)
+
+  if (error) throw new Error(error.message)
 
   revalidatePath(`/game/${gameId}`)
   revalidatePath("/dashboard")
