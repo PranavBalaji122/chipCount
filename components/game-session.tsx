@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { setGameStatus, kickPlayer, requestRejoin, transferHost, updateRequestedAmounts } from "@/lib/actions"
@@ -77,20 +77,15 @@ export function GameSession({
   const [guestForm, setGuestForm] = useState({ name: "", cash_in: "", cash_out: "" })
   const [lastGameStatus, setLastGameStatus] = useState(game.status)
   
-  // Track fields currently being edited to prevent overwrites
-  const [editingFields, setEditingFields] = useState<Set<string>>(new Set())
+  // Track fields currently being edited to prevent overwrites (ref so fetchAll always sees current value)
+  const editingFieldsRef = useRef<Set<string>>(new Set())
   
-  // Helper to add/remove editing field tracking
   const setFieldEditing = (fieldKey: string, editing: boolean) => {
-    setEditingFields(prev => {
-      const next = new Set(prev)
-      if (editing) {
-        next.add(fieldKey)
-      } else {
-        next.delete(fieldKey)
-      }
-      return next
-    })
+    if (editing) {
+      editingFieldsRef.current.add(fieldKey)
+    } else {
+      editingFieldsRef.current.delete(fieldKey)
+    }
   }
 
   // Derive isHost reactively from hostId state so host transfers update the UI instantly
@@ -260,13 +255,13 @@ export function GameSession({
           const existing = prevPlayers.find(p => p.user_id === newPlayer.user_id)
           if (!existing) return newPlayer
           
-          // Preserve values for fields currently being edited
-          const hostEditingCashIn = editingFields.has(`host-${newPlayer.user_id}-cash_in`)
-          const hostEditingCashOut = editingFields.has(`host-${newPlayer.user_id}-cash_out`)
-          const selfEditingRequestedIn = editingFields.has(`self-${newPlayer.user_id}-requested_cash_in`)
-          const selfEditingRequestedOut = editingFields.has(`self-${newPlayer.user_id}-requested_cash_out`)
-          const pendingEditingRequestedIn = editingFields.has(`pending-${newPlayer.user_id}-requested_cash_in`)
-          const pendingEditingRequestedOut = editingFields.has(`pending-${newPlayer.user_id}-requested_cash_out`)
+          const ef = editingFieldsRef.current
+          const hostEditingCashIn = ef.has(`host-${newPlayer.user_id}-cash_in`)
+          const hostEditingCashOut = ef.has(`host-${newPlayer.user_id}-cash_out`)
+          const selfEditingRequestedIn = ef.has(`self-${newPlayer.user_id}-requested_cash_in`)
+          const selfEditingRequestedOut = ef.has(`self-${newPlayer.user_id}-requested_cash_out`)
+          const pendingEditingRequestedIn = ef.has(`pending-${newPlayer.user_id}-requested_cash_in`)
+          const pendingEditingRequestedOut = ef.has(`pending-${newPlayer.user_id}-requested_cash_out`)
           
           return {
             ...newPlayer,
@@ -298,9 +293,8 @@ export function GameSession({
           const existing = prevGuests.find(g => g.id === newGuest.id)
           if (!existing) return newGuest
           
-          // Preserve values for fields currently being edited
-          const editingCashIn = editingFields.has(`guest-${newGuest.id}-cash_in`)
-          const editingCashOut = editingFields.has(`guest-${newGuest.id}-cash_out`)
+          const editingCashIn = editingFieldsRef.current.has(`guest-${newGuest.id}-cash_in`)
+          const editingCashOut = editingFieldsRef.current.has(`guest-${newGuest.id}-cash_out`)
           
           return {
             ...newGuest,
