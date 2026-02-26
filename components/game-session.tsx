@@ -553,6 +553,9 @@ export function GameSession({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              Session History
+            </Button>
             {isHost && (
               <Button
                 variant={isClosed ? "outline" : "secondary"}
@@ -1073,12 +1076,7 @@ export function GameSession({
 
       {payout && (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Payout summary</h2>
-            <Button variant="outline" size="sm">
-              Session History
-            </Button>
-          </div>
+          <h2 className="text-lg font-semibold">Payout summary</h2>
           <PayoutStatsView payout={payout} />
         </>
       )}
