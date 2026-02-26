@@ -76,6 +76,22 @@ export function GameSession({
   const [guests, setGuests] = useState<GuestPlayer[]>([])
   const [guestForm, setGuestForm] = useState({ name: "", cash_in: "", cash_out: "" })
   const [lastGameStatus, setLastGameStatus] = useState(game.status)
+  
+  // Track fields currently being edited to prevent overwrites
+  const [editingFields, setEditingFields] = useState<Set<string>>(new Set())
+  
+  // Helper to add/remove editing field tracking
+  const setFieldEditing = (fieldKey: string, editing: boolean) => {
+    setEditingFields(prev => {
+      const next = new Set(prev)
+      if (editing) {
+        next.add(fieldKey)
+      } else {
+        next.delete(fieldKey)
+      }
+      return next
+    })
+  }
 
   // Derive isHost reactively from hostId state so host transfers update the UI instantly
   const isHost = hostId === currentUserId
@@ -216,29 +232,51 @@ export function GameSession({
       .select("user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)")
       .eq("game_id", game.id)
     if (data) {
-      setPlayers(
-        data.map((p: {
-          user_id: string
-          status: string
-          cash_in: number | null
-          cash_out: number | null
-          requested_cash_in: number | null
-          requested_cash_out: number | null
-          profile: { display_name: string | null; venmo_handle: string | null } | { display_name: string | null; venmo_handle: string | null }[] | null
-        }) => {
-          const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
+      const newPlayers = data.map((p: {
+        user_id: string
+        status: string
+        cash_in: number | null
+        cash_out: number | null
+        requested_cash_in: number | null
+        requested_cash_out: number | null
+        profile: { display_name: string | null; venmo_handle: string | null } | { display_name: string | null; venmo_handle: string | null }[] | null
+      }) => {
+        const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
+        return {
+          user_id: p.user_id,
+          status: p.status as "pending" | "approved" | "denied",
+          cash_in: p.cash_in === null ? null : Number(p.cash_in),
+          cash_out: p.cash_out === null ? null : Number(p.cash_out),
+          requested_cash_in: p.requested_cash_in === null ? (p.cash_in === null ? null : Number(p.cash_in)) : Number(p.requested_cash_in),
+          requested_cash_out: p.requested_cash_out === null ? (p.cash_out === null ? null : Number(p.cash_out)) : Number(p.requested_cash_out),
+          display_name: prof?.display_name ?? null,
+          venmo_handle: prof?.venmo_handle ?? null,
+        }
+      })
+      
+      // Merge with existing players to preserve editing state
+      setPlayers(prevPlayers => {
+        return newPlayers.map(newPlayer => {
+          const existing = prevPlayers.find(p => p.user_id === newPlayer.user_id)
+          if (!existing) return newPlayer
+          
+          // Preserve values for fields currently being edited
+          const hostEditingCashIn = editingFields.has(`host-${newPlayer.user_id}-cash_in`)
+          const hostEditingCashOut = editingFields.has(`host-${newPlayer.user_id}-cash_out`)
+          const selfEditingRequestedIn = editingFields.has(`self-${newPlayer.user_id}-requested_cash_in`)
+          const selfEditingRequestedOut = editingFields.has(`self-${newPlayer.user_id}-requested_cash_out`)
+          const pendingEditingRequestedIn = editingFields.has(`pending-${newPlayer.user_id}-requested_cash_in`)
+          const pendingEditingRequestedOut = editingFields.has(`pending-${newPlayer.user_id}-requested_cash_out`)
+          
           return {
-            user_id: p.user_id,
-            status: p.status as "pending" | "approved" | "denied",
-            cash_in: p.cash_in === null ? null : Number(p.cash_in),
-            cash_out: p.cash_out === null ? null : Number(p.cash_out),
-            requested_cash_in: p.requested_cash_in === null ? (p.cash_in === null ? null : Number(p.cash_in)) : Number(p.requested_cash_in),
-            requested_cash_out: p.requested_cash_out === null ? (p.cash_out === null ? null : Number(p.cash_out)) : Number(p.requested_cash_out),
-            display_name: prof?.display_name ?? null,
-            venmo_handle: prof?.venmo_handle ?? null,
+            ...newPlayer,
+            cash_in: hostEditingCashIn ? existing.cash_in : newPlayer.cash_in,
+            cash_out: hostEditingCashOut ? existing.cash_out : newPlayer.cash_out,
+            requested_cash_in: (selfEditingRequestedIn || pendingEditingRequestedIn) ? existing.requested_cash_in : newPlayer.requested_cash_in,
+            requested_cash_out: (selfEditingRequestedOut || pendingEditingRequestedOut) ? existing.requested_cash_out : newPlayer.requested_cash_out,
           }
         })
-      )
+      })
     }
 
     // Fetch persisted guests
@@ -247,14 +285,30 @@ export function GameSession({
       .select("id, name, cash_in, cash_out")
       .eq("game_id", game.id)
     if (guestData) {
-      setGuests(
-        guestData.map((g: { id: string; name: string; cash_in: number; cash_out: number }) => ({
-          id: g.id,
-          name: g.name,
-          cash_in: g.cash_in,
-          cash_out: g.cash_out,
-        }))
-      )
+      const newGuests = guestData.map((g: { id: string; name: string; cash_in: number; cash_out: number }) => ({
+        id: g.id,
+        name: g.name,
+        cash_in: g.cash_in,
+        cash_out: g.cash_out,
+      }))
+      
+      // Merge with existing guests to preserve editing state
+      setGuests(prevGuests => {
+        return newGuests.map(newGuest => {
+          const existing = prevGuests.find(g => g.id === newGuest.id)
+          if (!existing) return newGuest
+          
+          // Preserve values for fields currently being edited
+          const editingCashIn = editingFields.has(`guest-${newGuest.id}-cash_in`)
+          const editingCashOut = editingFields.has(`guest-${newGuest.id}-cash_out`)
+          
+          return {
+            ...newGuest,
+            cash_in: editingCashIn ? existing.cash_in : newGuest.cash_in,
+            cash_out: editingCashOut ? existing.cash_out : newGuest.cash_out,
+          }
+        })
+      })
     }
   }
 
@@ -617,6 +671,7 @@ export function GameSession({
                             className="w-24"
                             placeholder="In"
                             value={p.cash_in === null || p.cash_in === undefined ? "" : p.cash_in.toString()}
+                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_in`, true)}
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
@@ -627,6 +682,7 @@ export function GameSession({
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
+                              setFieldEditing(`host-${p.user_id}-cash_in`, false)
                               updateCash(game.id, p.user_id, v, p.cash_out)
                             }}
                           />
@@ -634,6 +690,7 @@ export function GameSession({
                             className="w-24"
                             placeholder="Out"
                             value={p.cash_out === null || p.cash_out === undefined ? "" : p.cash_out.toString()}
+                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_out`, true)}
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
@@ -644,6 +701,7 @@ export function GameSession({
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
+                              setFieldEditing(`host-${p.user_id}-cash_out`, false)
                               updateCash(game.id, p.user_id, p.cash_in, v)
                             }}
                           />
@@ -735,6 +793,7 @@ export function GameSession({
                             className="w-24"
                             placeholder="In"
                             value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
+                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_in`, true)}
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
@@ -745,6 +804,7 @@ export function GameSession({
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
+                              setFieldEditing(`self-${p.user_id}-requested_cash_in`, false)
                               updateRequestedCash(game.id, p.user_id, v, p.requested_cash_out)
                             }}
                           />
@@ -752,6 +812,7 @@ export function GameSession({
                             className="w-24"
                             placeholder="Out"
                             value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
+                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_out`, true)}
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
@@ -762,6 +823,7 @@ export function GameSession({
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
+                              setFieldEditing(`self-${p.user_id}-requested_cash_out`, false)
                               updateRequestedCash(game.id, p.user_id, p.requested_cash_in, v)
                             }}
                           />
@@ -796,6 +858,7 @@ export function GameSession({
                         className="w-24"
                         placeholder="Requested in"
                         value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
+                        onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_in`, true)}
                         onChange={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
                           setPlayers((prev) =>
@@ -806,6 +869,7 @@ export function GameSession({
                         }}
                         onBlur={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
+                          setFieldEditing(`pending-${p.user_id}-requested_cash_in`, false)
                           updateRequestedAmounts(game.id, v ?? 0, p.requested_cash_out ?? 0).catch(() =>
                             toast.error("Failed to save")
                           )
@@ -815,6 +879,7 @@ export function GameSession({
                         className="w-24"
                         placeholder="Requested out"
                         value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
+                        onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_out`, true)}
                         onChange={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
                           setPlayers((prev) =>
@@ -825,6 +890,7 @@ export function GameSession({
                         }}
                         onBlur={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
+                          setFieldEditing(`pending-${p.user_id}-requested_cash_out`, false)
                           updateRequestedAmounts(game.id, p.requested_cash_in ?? 0, v ?? 0).catch(() =>
                             toast.error("Failed to save")
                           )
@@ -905,12 +971,14 @@ export function GameSession({
                       className="flex-1 sm:w-24 sm:flex-initial"
                       placeholder="In"
                       value={guest.cash_in === null || guest.cash_in === undefined ? "" : guest.cash_in.toString()}
+                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_in`, true)}
                       onChange={(e) => {
                         const v = parseCashInput(e.target.value)
                         setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_in: v } : g)))
                       }}
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
+                        setFieldEditing(`guest-${guest.id}-cash_in`, false)
                         updateGuestDb(guest.id, { cash_in: v })
                       }}
                       disabled={isClosed}
@@ -919,12 +987,14 @@ export function GameSession({
                       className="flex-1 sm:w-24 sm:flex-initial"
                       placeholder="Out"
                       value={guest.cash_out === null || guest.cash_out === undefined ? "" : guest.cash_out.toString()}
+                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_out`, true)}
                       onChange={(e) => {
                         const v = parseCashInput(e.target.value)
                         setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_out: v } : g)))
                       }}
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
+                        setFieldEditing(`guest-${guest.id}-cash_out`, false)
                         updateGuestDb(guest.id, { cash_out: v })
                       }}
                       disabled={isClosed}
