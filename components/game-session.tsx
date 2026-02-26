@@ -669,6 +669,24 @@ export function GameSession({
                     <span className="text-muted-foreground ml-1 text-sm">(denied)</span>
                   )}
                 </span>
+                {/* Host can re-approve a denied player */}
+                {isHost && p.status === "denied" && p.user_id !== currentUserId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={updating === p.user_id}
+                    onClick={() =>
+                      updatePlayerFields(game.id, p.user_id, { status: "approved" })
+                    }
+                  >
+                    {updating === p.user_id ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="mr-1 h-3.5 w-3.5" />
+                    )}
+                    Approve
+                  </Button>
+                )}
                 {p.status === "approved" && (
                   <>
                     {/* Host controls: always editable, even when session is closed */}
