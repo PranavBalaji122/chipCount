@@ -115,18 +115,19 @@ function PlayerBarChart({
         )
     }
     const domain = yDomain(data)
+    const barWidth = data.length <= 4 ? 48 : data.length <= 8 ? 36 : 24
     return (
-        <div className="h-[200px] w-full">
+        <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barSize={36} barCategoryGap="40%">
-                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
+                <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barSize={barWidth} barCategoryGap="20%">
+                    <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.4} strokeDasharray="3 3" />
                     <XAxis
                         dataKey="name"
                         tick={TICK}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
-                        tickFormatter={(v: string) => (v.length > 10 ? v.slice(0, 10) + "…" : v)}
+                        tickFormatter={(v: string) => (v.length > 12 ? v.slice(0, 11) + "…" : v)}
                     />
                     <YAxis
                         tickFormatter={(v) => formatDollar(v)}
@@ -138,18 +139,16 @@ function PlayerBarChart({
                     />
                     <Tooltip
                         formatter={(value: number) => [formatDollar(value), tooltipLabel]}
-                        cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 6 }}
+                        cursor={{ fill: "oklch(0.5 0 0 / 0.1)", radius: 6 }}
                         {...TOOLTIP_STYLE}
                     />
-                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+                    <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeWidth={1} strokeOpacity={0.5} />
                     <Bar dataKey="net" radius={[6, 6, 2, 2]}>
                         {data.map((entry, i) => (
                             <Cell
                                 key={i}
-                                fill={entry.isMe
-                                    ? entry.net >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"
-                                    : entry.net >= 0 ? "hsl(var(--success) / 0.7)" : "hsl(var(--destructive) / 0.7)"}
-                                opacity={entry.isMe ? 1 : 0.6}
+                                fill={entry.net >= 0 ? "#22c55e" : "#ef4444"}
+                                opacity={entry.isMe ? 1 : 0.55}
                             />
                         ))}
                     </Bar>
@@ -427,15 +426,15 @@ export function GameMetricsClient({
                             Close the session to record the first data point.
                         </p>
                     ) : (
-                        <div className="h-[200px] w-full">
+                        <div className="h-[280px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                     data={sessionChartPoints}
                                     margin={{ top: 8, right: 8, left: 0, bottom: 4 }}
-                                    barSize={36}
-                                    barCategoryGap="40%"
+                                    barSize={sessionChartPoints.length <= 3 ? 48 : sessionChartPoints.length <= 8 ? 36 : 24}
+                                    barCategoryGap="20%"
                                 >
-                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
+                                    <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.4} strokeDasharray="3 3" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -451,13 +450,13 @@ export function GameMetricsClient({
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
                                             return pt ? pt.date : label
                                         }}
-                                        cursor={{ fill: "hsl(var(--muted) / 0.5)", radius: 6 }}
+                                        cursor={{ fill: "oklch(0.5 0 0 / 0.1)", radius: 6 }}
                                         {...TOOLTIP_STYLE}
                                     />
-                                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+                                    <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeWidth={1} strokeOpacity={0.5} />
                                     <Bar dataKey="net" radius={[6, 6, 2, 2]}>
                                         {sessionChartPoints.map((entry, i) => (
-                                            <Cell key={i} fill={entry.net >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"} />
+                                            <Cell key={i} fill={entry.net >= 0 ? "#22c55e" : "#ef4444"} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -479,10 +478,10 @@ export function GameMetricsClient({
                             Close the session to record the first data point.
                         </p>
                     ) : (
-                        <div className="h-[200px] w-full">
+                        <div className="h-[280px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={cumulativeChartPoints} margin={{ top: 8, right: 20, left: 0, bottom: 4 }}>
-                                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} strokeDasharray="3 3" />
+                                    <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.4} strokeDasharray="3 3" />
                                     <XAxis dataKey="label" tick={TICK} axisLine={false} tickLine={false} />
                                     <YAxis
                                         tickFormatter={(v) => formatDollar(v)}
@@ -498,10 +497,10 @@ export function GameMetricsClient({
                                             const pt = payload?.[0]?.payload as SessionChartPoint | undefined
                                             return pt ? pt.date : label
                                         }}
-                                        cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1.5 }}
+                                        cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1.5 }}
                                         {...TOOLTIP_STYLE}
                                     />
-                                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+                                    <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeWidth={1} strokeOpacity={0.5} />
                                     <Line
                                         type="monotone"
                                         dataKey="net"
@@ -510,20 +509,20 @@ export function GameMetricsClient({
                                         dot={(props) => {
                                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                             const { cx, cy, payload } = props as any
-                                            const c = (payload.net ?? 0) >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"
+                                            const c = (payload.net ?? 0) >= 0 ? "#22c55e" : "#ef4444"
                                             return (
                                                 <circle
                                                     key={payload.label}
                                                     cx={cx}
                                                     cy={cy}
-                                                    r={5}
+                                                    r={6}
                                                     fill={c}
-                                                    stroke="hsl(var(--background))"
+                                                    stroke="var(--background)"
                                                     strokeWidth={2}
                                                 />
                                             )
                                         }}
-                                        activeDot={{ r: 7, fill: lineColor, stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                                        activeDot={{ r: 8, fill: lineColor, stroke: "var(--background)", strokeWidth: 2 }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -533,43 +532,45 @@ export function GameMetricsClient({
             </Card>
 
             {/* All-time standings */}
-            <Card>
-                <CardHeader className="pb-2">
+            <Card className="bg-card/50 border-border/50">
+                <CardHeader className="pb-3">
                     <CardTitle className="text-base">All-Time Standings</CardTitle>
                     <CardDescription>Lifetime net profit for players at this table</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                     {standingsPlayers.length === 0 ? (
                         <p className="text-muted-foreground text-sm text-center py-8">No data yet.</p>
                     ) : (
-                        <div className="space-y-1.5">
-                            {[...standingsPlayers]
-
-                                .sort((a, b) => b.game_net - a.game_net)
-                                .map((p, i) => (
-                                    <div
-                                        key={p.user_id}
-                                        className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors ${p.user_id === currentUserId
-                                            ? "bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30 dark:border-emerald-500/20"
-                                            : "bg-muted/40 dark:bg-muted/60"
-                                            } ${p.was_kicked ? "opacity-60" : ""}`}
-                                    >
-                                        <span className="flex items-center gap-2.5">
-                                            <span className="text-muted-foreground text-xs w-5 tabular-nums">#{i + 1}</span>
-                                            <span className="font-medium">
-                                                {p.display_name || p.venmo_handle || p.user_id.slice(0, 8)}
-                                                {p.user_id === currentUserId && (
-                                                    <span className="ml-2 text-xs text-emerald-500 font-normal">you</span>
-                                                )}
-                                                {p.was_kicked && (
-                                                    <span className="ml-2 text-xs text-muted-foreground font-normal">removed</span>
-                                                )}
+                        <>
+                            <PlayerBarChart data={allTimeBarData} tooltipLabel="Game Net" />
+                            <div className="space-y-1.5 mt-4">
+                                {[...standingsPlayers]
+                                    .sort((a, b) => b.game_net - a.game_net)
+                                    .map((p, i) => (
+                                        <div
+                                            key={p.user_id}
+                                            className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors ${p.user_id === currentUserId
+                                                ? "bg-emerald-500/10 border border-emerald-500/30"
+                                                : "bg-muted/40"
+                                                } ${p.was_kicked ? "opacity-60" : ""}`}
+                                        >
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <span className="text-muted-foreground text-xs w-5 tabular-nums shrink-0">#{i + 1}</span>
+                                                <span className="font-medium truncate">
+                                                    {p.display_name || p.venmo_handle || p.user_id.slice(0, 8)}
+                                                    {p.user_id === currentUserId && (
+                                                        <span className="ml-2 text-xs text-emerald-500 font-normal">you</span>
+                                                    )}
+                                                    {p.was_kicked && (
+                                                        <span className="ml-2 text-xs text-muted-foreground font-normal">removed</span>
+                                                    )}
+                                                </span>
                                             </span>
-                                        </span>
-                                        <NetBadge value={p.game_net} />
-                                    </div>
-                                ))}
-                        </div>
+                                            <NetBadge value={p.game_net} />
+                                        </div>
+                                    ))}
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
