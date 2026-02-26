@@ -198,9 +198,7 @@ export default async function GameMetricsPage({
                         <span className="capitalize">{game.status}</span>
                     </p>
                 </div>
-                <Button variant="outline" size="sm">
-                    Session History
-                </Button>
+             
             </div>
 
             <GameMetricsClient

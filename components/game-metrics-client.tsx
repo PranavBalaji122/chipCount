@@ -53,18 +53,18 @@ type SessionHistoryEntry = {
 
 const TOOLTIP_STYLE = {
     contentStyle: {
-        backgroundColor: "hsl(var(--background))",
-        border: "1px solid hsl(var(--border))",
+        backgroundColor: "var(--background)",
+        border: "1px solid var(--border)",
         borderRadius: "10px",
-        color: "hsl(var(--foreground))",
+        color: "var(--foreground)",
         fontSize: 13,
-        boxShadow: "0 4px 24px hsl(var(--foreground) / 0.1)"
+        boxShadow: "0 4px 24px oklch(0 0 0 / 0.25)"
     },
-    itemStyle: { color: "hsl(var(--muted-foreground))" },
-    labelStyle: { color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 2 }
+    itemStyle: { color: "var(--muted-foreground)" },
+    labelStyle: { color: "var(--foreground)", fontWeight: 600, marginBottom: 2 }
 }
 
-const TICK = { fontSize: 11, fill: "hsl(var(--muted-foreground))" }
+const TICK = { fontSize: 11, fill: "var(--muted-foreground)" }
 
 function yDomain(data: { net: number }[]): [number, number] {
     if (!data.length) return [-10, 10]
