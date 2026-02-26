@@ -23,22 +23,27 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
     let success: string
     let destructive: string
     let muted: string
+    
     if (typeof window === "undefined") {
       // Server-side fallback colors
-      success = "hsl(150 60% 50%)"
-      destructive = "hsl(0 84% 60%)"
-      muted = "hsl(215 16% 47%)"
+      success = "#22c55e"
+      destructive = "#ef4444"
+      muted = "#71717a"
     } else {
-      const rootStyles = window.getComputedStyle(document.documentElement)
-      // Get CSS custom property values and convert to hsl
-      const successVar = rootStyles.getPropertyValue("--success").trim()
-      const destructiveVar = rootStyles.getPropertyValue("--destructive").trim()
-      const mutedVar = rootStyles.getPropertyValue("--muted-foreground").trim()
+      // Check for dark mode and use appropriate colors
+      const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
       
-      success = successVar ? `hsl(${successVar})` : "hsl(150 60% 50%)"
-      destructive = destructiveVar ? `hsl(${destructiveVar})` : "hsl(0 84% 60%)"
-      muted = mutedVar ? `hsl(${mutedVar})` : "hsl(215 16% 47%)"
+      if (isDark) {
+        success = "#4ade80"  // green-400
+        destructive = "#f87171"  // red-400
+        muted = "#9ca3af"  // gray-400
+      } else {
+        success = "#22c55e"  // green-500
+        destructive = "#ef4444"  // red-500
+        muted = "#71717a"  // zinc-500
+      }
     }
+    
     return chroma
       .scale([success, muted, destructive])
       .mode("lrgb")
