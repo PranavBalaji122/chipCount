@@ -68,6 +68,19 @@ export async function setGameStatus(
 
   if (error) throw new Error(error.message)
 
+  // When reopening: clear all player cash amounts so the new session starts fresh
+  if (status === "active") {
+    await supabase
+      .from("game_players")
+      .update({
+        cash_in: null,
+        cash_out: null,
+        requested_cash_in: null,
+        requested_cash_out: null,
+      })
+      .eq("game_id", gameId)
+  }
+
   revalidatePath(`/game/${gameId}`)
   revalidatePath("/dashboard")
 }

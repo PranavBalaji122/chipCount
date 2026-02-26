@@ -454,6 +454,20 @@ export function GameSession({
       const newStatus = isClosed ? "active" : "closed"
       await setGameStatus(game.id, newStatus)
       setGameStatus_(newStatus)
+      
+      // When reopening: clear all player amounts locally so the UI starts fresh
+      if (newStatus === "active") {
+        setPlayers(prev =>
+          prev.map(p => ({
+            ...p,
+            cash_in: null,
+            cash_out: null,
+            requested_cash_in: null,
+            requested_cash_out: null,
+          }))
+        )
+      }
+      
       toast.success(isClosed ? "Session reopened" : "Session closed — edits are locked")
     } catch (e) {
       toast.error((e as Error).message)
