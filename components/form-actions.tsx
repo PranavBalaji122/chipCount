@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Link as LinkIcon, Eraser } from "lucide-react"
 import { toast } from "sonner"
 
-export function FormActions() {
+export function FormActions() { 
   const copyUrlToClipboard = () => {
     navigator.clipboard.writeText(window.location.href).then(
       () => toast.success("Link copied to clipboard"),
