@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { ProfileForm } from "@/components/profile-form"
 import { NetProfitBlock } from "@/components/net-profit-block"
+import { DebtsSection } from "@/components/debts-section"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import type { DebtWithRelations } from "@/lib/db-types"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -11,11 +13,27 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
+  const [{ data: profile }, { data: debts }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("debts")
+      .select(`
+        id,
+        game_id,
+        creditor_id,
+        debtor_id,
+        amount,
+        status,
+        created_at,
+        updated_at,
+        creditor:profiles!creditor_id(display_name),
+        debtor:profiles!debtor_id(display_name),
+        game:games!game_id(description, short_code)
+      `)
+      .or(`creditor_id.eq.${user.id},debtor_id.eq.${user.id}`)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+  ])
 
   if (!profile) {
     return (
@@ -39,6 +57,19 @@ export default async function ProfilePage() {
         <CardContent className="space-y-6">
           <NetProfitBlock profile={profile} />
           <ProfileForm profile={profile} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Debts</CardTitle>
+          <CardDescription>Pending payments from your games.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DebtsSection
+            userId={user.id}
+            debts={(debts as unknown as DebtWithRelations[]) ?? []}
+          />
         </CardContent>
       </Card>
     </div>

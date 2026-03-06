@@ -39,3 +39,22 @@ export type GameProfitHistoryRow = {
   profit_delta: number
   recorded_at: string
 }
+
+export type DebtStatus = "pending" | "settled"
+
+export type Debt = {
+  id: string
+  game_id: string
+  creditor_id: string
+  debtor_id: string
+  amount: number
+  status: DebtStatus
+  created_at: string
+  updated_at: string
+}
+
+export type DebtWithRelations = Debt & {
+  creditor: { display_name: string | null } | null
+  debtor: { display_name: string | null } | null
+  game: { description: string | null; short_code: string } | null
+}

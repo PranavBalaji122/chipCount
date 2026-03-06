@@ -11,7 +11,8 @@ where requested_cash_in = 0
   and requested_cash_out = 0;
 
 -- Allow pending players to update only their own request fields (not status or approved cash)
-create policy if not exists "Pending players can update own requests"
+drop policy if exists "Pending players can update own requests" on public.game_players;
+create policy "Pending players can update own requests"
   on public.game_players
   for update
   using (auth.uid() = user_id and status = 'pending')
