@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                     {isHost && (
                       <form action={closeGame.bind(null, game.id)}>
                         <Button variant="destructive" size="sm" type="submit">
-                          End Game
+                          Delete Table
                         </Button>
                       </form>
                     )}

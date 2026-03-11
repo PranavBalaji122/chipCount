@@ -2,6 +2,9 @@
 interface ProfileData {
   display_name: string | null
   venmo_handle: string | null
+  zelle_handle: string | null
+  cashapp_handle: string | null
+  paypal_handle: string | null
 }
 
 interface CacheEntry {

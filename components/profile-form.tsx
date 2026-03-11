@@ -23,6 +23,9 @@ const profileSchema = z.object({
   phone: z.string().max(30).optional().nullable(),
   email: z.string().email().max(100).optional().nullable(),
   venmo_handle: z.string().max(30).optional().nullable(),
+  zelle_handle: z.string().max(100).optional().nullable(),
+  cashapp_handle: z.string().max(30).optional().nullable(),
+  paypal_handle: z.string().max(100).optional().nullable(),
   profile_public: z.boolean()
 })
 
@@ -37,6 +40,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       phone: profile.phone ?? "",
       email: profile.email ?? "",
       venmo_handle: profile.venmo_handle ?? "",
+      zelle_handle: profile.zelle_handle ?? "",
+      cashapp_handle: profile.cashapp_handle ?? "",
+      paypal_handle: profile.paypal_handle ?? "",
       profile_public: profile.profile_public
     }
   })
@@ -81,6 +87,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         phone: values.phone || null,
         email: values.email || null,
         venmo_handle: values.venmo_handle || null,
+        zelle_handle: values.zelle_handle || null,
+        cashapp_handle: values.cashapp_handle || null,
+        paypal_handle: values.paypal_handle || null,
         profile_public: values.profile_public
       })
       .eq("id", user.id)
@@ -153,6 +162,45 @@ export function ProfileForm({ profile }: { profile: Profile }) {
               <FormLabel>Venmo (without @)</FormLabel>
               <FormControl>
                 <Input placeholder="username" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="zelle_handle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Zelle (Email or Phone Number)</FormLabel>
+              <FormControl>
+                <Input placeholder="you@example.com or +1 234 567 8900" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cashapp_handle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cash App (without $)</FormLabel>
+              <FormControl>
+                <Input placeholder="username" {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="paypal_handle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>PayPal (Username or Email)</FormLabel>
+              <FormControl>
+                <Input placeholder="username or you@example.com" {...field} value={field.value ?? ""} />
               </FormControl>
               <FormMessage />
             </FormItem>

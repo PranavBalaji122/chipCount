@@ -47,12 +47,12 @@ export default async function GameMetricsPage({
             .single(),
         supabase
             .from("game_players")
-            .select("user_id, cash_in, cash_out, profile:profiles(display_name, venmo_handle)")
+            .select("user_id, cash_in, cash_out, profile:profiles(display_name, venmo_handle, cashapp_handle)")
             .eq("game_id", gameId)
             .eq("status", "approved"),
         supabase
             .from("game_players")
-            .select("user_id, status, profile:profiles(display_name, venmo_handle)")
+            .select("user_id, status, profile:profiles(display_name, venmo_handle, cashapp_handle)")
             .eq("game_id", gameId)
             .neq("status", "pending"),
         supabase
@@ -78,7 +78,7 @@ export default async function GameMetricsPage({
     const allSnapshots = snapshots ?? []
     const allGuestSnapshots = guestSnapshots ?? []
 
-    type RawProfile = { display_name: string | null; venmo_handle: string | null } | null
+    type RawProfile = { display_name: string | null; venmo_handle: string | null; cashapp_handle: string | null } | null
 
     // Build userId -> display name map
     const userNameMap = new Map<string, string>()
@@ -162,6 +162,7 @@ export default async function GameMetricsPage({
             user_id: p.user_id,
             display_name: prof?.display_name ?? null,
             venmo_handle: prof?.venmo_handle ?? null,
+            cashapp_handle: prof?.cashapp_handle ?? null,
             game_net: snapshotTotals[p.user_id] ?? 0,
             cash_in: cashIn,
             cash_out: cashOut,
@@ -179,6 +180,7 @@ export default async function GameMetricsPage({
                 user_id: p.user_id,
                 display_name: prof?.display_name ?? null,
                 venmo_handle: prof?.venmo_handle ?? null,
+                cashapp_handle: prof?.cashapp_handle ?? null,
                 game_net: snapshotTotals[p.user_id] ?? 0,
                 is_me: p.user_id === user.id,
                 was_kicked: p.status === "denied"
