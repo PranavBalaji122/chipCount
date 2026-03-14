@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { closeGame } from "@/lib/actions"
-import { Loader2, AlertTriangle } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 
 export function DeleteTableButton({ gameId }: { gameId: string }) {
   const [confirming, setConfirming] = useState(false)
@@ -53,8 +53,7 @@ export function DeleteTableButton({ gameId }: { gameId: string }) {
                   await closeGame(gameId)
                 }}
               >
-                {deleting && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
-                Delete
+                {deleting ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </div>
