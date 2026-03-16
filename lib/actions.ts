@@ -108,6 +108,51 @@ function computeDebts(
   return debts
 }
 
+export async function renameGame(gameId: string, newName: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Not authenticated")
+
+  const { data: game, error: gameError } = await supabase
+    .from("games")
+    .select("host_id")
+    .eq("id", gameId)
+    .single()
+
+  if (gameError || !game) throw new Error("Game not found")
+  if (game.host_id !== user.id) throw new Error("Not the host")
+
+  const { error } = await supabase
+    .from("games")
+    .update({ description: newName.trim() || null })
+    .eq("id", gameId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath("/dashboard")
+  revalidatePath(`/game/${gameId}`)
+}
+
+export async function deleteGame(gameId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from("games")
+    .update({ status: "ended" })
+    .eq("id", gameId)
+
+  if (error) {
+    console.error("Failed to delete game:", error)
+  }
+
+  revalidatePath("/dashboard")
+  revalidatePath("/profile")
+  revalidatePath(`/game/${gameId}`)
+}
+
 export async function settleDebt(debtId: string) {
   const supabase = await createClient()
 

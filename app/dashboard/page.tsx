@@ -1,9 +1,10 @@
-import { closeGame } from "@/lib/actions"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardActions } from "@/components/dashboard-actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DeleteTableButton } from "@/components/delete-table-button"
+import { RenameTableButton } from "@/components/rename-table-button"
 import Link from "next/link"
 
 // Add short cache for faster back/forward navigation
@@ -73,13 +74,17 @@ export default async function DashboardPage() {
                     }`}
                 >
                   <div>
-                    <p className="font-medium">
-                      {game.description || "Game"}{" "}
+                    <div className="font-medium">
+                      {isHost ? (
+                        <RenameTableButton gameId={game.id} currentName={game.description || "Game"} />
+                      ) : (
+                        game.description || "Game"
+                      )}{" "}
                       <span className={`ml-1 text-xs ${isDenied ? "text-red-400" : "text-muted-foreground"
                         }`}>
                         ({roleLabel})
                       </span>
-                    </p>
+                    </div>
                     <p className="text-muted-foreground text-xs">
                       ID: <span className="font-mono">{game.short_code}</span>
                     </p>
@@ -94,11 +99,7 @@ export default async function DashboardPage() {
                       <Link href={`/game/${game.id}`} prefetch={true}>Open</Link>
                     </Button>
                     {isHost && (
-                      <form action={closeGame.bind(null, game.id)}>
-                        <Button variant="destructive" size="sm" type="submit">
-                          End Game
-                        </Button>
-                      </form>
+                      <DeleteTableButton gameId={game.id} gameStatus={game.status} />
                     )}
                   </div>
                 </div>

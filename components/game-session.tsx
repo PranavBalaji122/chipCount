@@ -30,6 +30,9 @@ type PlayerRow = {
   requested_cash_out: number | null
   display_name: string | null
   venmo_handle: string | null
+  zelle_handle: string | null
+  cashapp_handle: string | null
+  paypal_handle: string | null
 }
 
 type GuestPlayer = {
@@ -224,7 +227,7 @@ export function GameSession({
 
     const { data } = await supabase
       .from("game_players")
-      .select("user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)")
+      .select("user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle, zelle_handle, cashapp_handle, paypal_handle)")
       .eq("game_id", game.id)
     if (data) {
       const newPlayers = data.map((p: {
@@ -234,7 +237,7 @@ export function GameSession({
         cash_out: number | null
         requested_cash_in: number | null
         requested_cash_out: number | null
-        profile: { display_name: string | null; venmo_handle: string | null } | { display_name: string | null; venmo_handle: string | null }[] | null
+        profile: { display_name: string | null; venmo_handle: string | null; zelle_handle: string | null; cashapp_handle: string | null; paypal_handle: string | null } | { display_name: string | null; venmo_handle: string | null; zelle_handle: string | null; cashapp_handle: string | null; paypal_handle: string | null }[] | null
       }) => {
         const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
         return {
@@ -246,6 +249,9 @@ export function GameSession({
           requested_cash_out: p.requested_cash_out === null ? (p.cash_out === null ? null : Number(p.cash_out)) : Number(p.requested_cash_out),
           display_name: prof?.display_name ?? null,
           venmo_handle: prof?.venmo_handle ?? null,
+          zelle_handle: prof?.zelle_handle ?? null,
+          cashapp_handle: prof?.cashapp_handle ?? null,
+          paypal_handle: prof?.paypal_handle ?? null,
         }
       })
       
@@ -362,7 +368,11 @@ export function GameSession({
       let base: string
       if ('venmo_handle' in p) {
         // Regular player
-        base = p.venmo_handle ? `@${p.venmo_handle}` : p.display_name || `Player_${p.user_id.slice(0, 8)}`
+        base = p.venmo_handle
+          ? `@${p.venmo_handle}`
+          : p.cashapp_handle
+            ? `$${p.cashapp_handle}`
+            : p.display_name || `Player_${p.user_id.slice(0, 8)}`
       } else {
         // Guest player
         base = `${p.name} (guest)`
@@ -489,7 +499,11 @@ export function GameSession({
     // Map approved players to user IDs
     approved.forEach((player) => {
       const playerName = gameForPayout.players.find(gp => {
-        const base = player.venmo_handle ? `@${player.venmo_handle}` : player.display_name || `Player_${player.user_id.slice(0, 8)}`
+        const base = player.venmo_handle
+          ? `@${player.venmo_handle}`
+          : player.cashapp_handle
+            ? `$${player.cashapp_handle}`
+            : player.display_name || `Player_${player.user_id.slice(0, 8)}`
         return gp.name === base || gp.name.startsWith(base + '_')
       })?.name
       if (playerName) {
@@ -546,10 +560,14 @@ export function GameSession({
           <div>
             <CardTitle>{game.description || "Game"}</CardTitle>
             <CardDescription>
-              Game ID: <span className="font-mono">{game.short_code}</span> — share so others can join
-              <br />
-              Invite link:{" "}
-              <span className="font-mono break-all">{inviteUrl}</span>
+              Game ID: <span className="font-mono">{game.short_code}</span>{!isClosed && <> — share so others can join</>}
+              {!isClosed && (
+                <>
+                  <br />
+                  Invite link:{" "}
+                  <span className="font-mono break-all">{inviteUrl}</span>
+                </>
+              )}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -567,13 +585,15 @@ export function GameSession({
                 ) : (
                   <Lock className="mr-1 h-4 w-4" />
                 )}
-                {isClosed ? "Reopen Session" : "Close Session"}
+                {isClosed ? "Reopen Game" : "End Game"}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={copyGameLink}>
-              <Copy className="mr-1 h-4 w-4" />
-              Copy link
-            </Button>
+            {!isClosed && (
+              <Button variant="outline" size="sm" onClick={copyGameLink}>
+                <Copy className="mr-1 h-4 w-4" />
+                Copy link
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
@@ -1116,7 +1136,7 @@ export function GameSession({
                 Player Actions
               </div>
               <p className="text-muted-foreground text-sm">
-                {selectedPlayer.display_name || selectedPlayer.venmo_handle || selectedPlayer.user_id.slice(0, 8)}
+                {selectedPlayer.display_name || selectedPlayer.venmo_handle || selectedPlayer.cashapp_handle || selectedPlayer.user_id.slice(0, 8)}
               </p>
             </div>
 

@@ -7,6 +7,9 @@ export type Profile = {
   phone: string | null
   email: string | null
   venmo_handle: string | null
+  zelle_handle: string | null
+  cashapp_handle: string | null
+  paypal_handle: string | null
   net_profit: number
   profile_public: boolean
   created_at: string

@@ -29,7 +29,7 @@ export default async function GamePage({
     supabase
       .from("game_players")
       .select(
-        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
+        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle, zelle_handle, cashapp_handle, paypal_handle)"
       )
       .eq("game_id", gameId)
   ])
@@ -55,8 +55,8 @@ export default async function GamePage({
         requested_cash_in: number | null
         requested_cash_out: number | null
         profile:
-        | { display_name: string | null; venmo_handle: string | null }
-        | { display_name: string | null; venmo_handle: string | null }[]
+        | { display_name: string | null; venmo_handle: string | null; zelle_handle: string | null; cashapp_handle: string | null; paypal_handle: string | null }
+        | { display_name: string | null; venmo_handle: string | null; zelle_handle: string | null; cashapp_handle: string | null; paypal_handle: string | null }[]
         | null
       }) => {
         const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
@@ -68,7 +68,10 @@ export default async function GamePage({
           requested_cash_in: Number(p.requested_cash_in ?? p.cash_in ?? 0),
           requested_cash_out: Number(p.requested_cash_out ?? p.cash_out ?? 0),
           display_name: prof?.display_name ?? null,
-          venmo_handle: prof?.venmo_handle ?? null
+          venmo_handle: prof?.venmo_handle ?? null,
+          zelle_handle: prof?.zelle_handle ?? null,
+          cashapp_handle: prof?.cashapp_handle ?? null,
+          paypal_handle: prof?.paypal_handle ?? null
         }
       }
     ) ?? []

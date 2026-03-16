@@ -6,6 +6,7 @@ import { formatDollar } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { NetProfitGraph } from "@/components/net-profit-graph"
 import { IoLogoVenmo } from "react-icons/io5"
+import { SiCashapp, SiPaypal, SiZelle } from "react-icons/si"
 
 export default async function PublicProfilePage({
   params
@@ -16,7 +17,7 @@ export default async function PublicProfilePage({
   const supabase = await createClient()
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, phone, email, venmo_handle, net_profit, profile_public")
+    .select("id, display_name, phone, email, venmo_handle, zelle_handle, cashapp_handle, paypal_handle, net_profit, profile_public")
     .eq("id", userId)
     .single()
 
@@ -51,6 +52,34 @@ export default async function PublicProfilePage({
               <IoLogoVenmo className="h-5 w-5" />
               @{profile.venmo_handle}
             </a>
+          )}
+          {profile.cashapp_handle && (
+            <a
+              href={`https://cash.app/$${profile.cashapp_handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-link inline-flex items-center gap-1"
+            >
+              <SiCashapp className="h-5 w-5" />
+              ${profile.cashapp_handle}
+            </a>
+          )}
+          {profile.paypal_handle && (
+            <a
+              href={`https://paypal.me/${profile.paypal_handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-link inline-flex items-center gap-1"
+            >
+              <SiPaypal className="h-5 w-5" />
+              {profile.paypal_handle}
+            </a>
+          )}
+          {profile.zelle_handle && (
+            <span className="text-link inline-flex items-center gap-1">
+              <SiZelle className="h-5 w-5" />
+              {profile.zelle_handle}
+            </span>
           )}
           {profile.phone && <p className="text-sm">Phone: {profile.phone}</p>}
           {profile.email && <p className="text-sm">Email: {profile.email}</p>}

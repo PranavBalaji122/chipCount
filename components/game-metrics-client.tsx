@@ -26,6 +26,7 @@ type SessionPlayer = {
     user_id: string
     display_name: string | null
     venmo_handle: string | null
+    cashapp_handle: string | null
     game_net: number
     cash_in: number
     cash_out: number
@@ -38,6 +39,7 @@ type StandingsPlayer = {
     user_id: string
     display_name: string | null
     venmo_handle: string | null
+    cashapp_handle: string | null
     game_net: number
     is_me: boolean
     was_kicked: boolean
@@ -341,13 +343,13 @@ export function GameMetricsClient({
     const me = sessionPlayers.find((p) => p.user_id === currentUserId)
 
     const sessionBarData = sessionPlayers.map((p) => ({
-        name: p.display_name || p.venmo_handle || p.user_id.slice(0, 8),
+        name: p.display_name || p.venmo_handle || p.cashapp_handle || p.user_id.slice(0, 8),
         net: p.session_net,
         isMe: p.user_id === currentUserId
     }))
 
     const allTimeBarData = standingsPlayers.map((p) => ({
-        name: p.display_name || p.venmo_handle || p.user_id.slice(0, 8),
+        name: p.display_name || p.venmo_handle || p.cashapp_handle || p.user_id.slice(0, 8),
         net: p.game_net,
         isMe: p.user_id === currentUserId
     }))
@@ -557,7 +559,7 @@ export function GameMetricsClient({
                                             <span className="flex items-center gap-2.5 min-w-0">
                                                 <span className="text-muted-foreground text-xs w-5 tabular-nums shrink-0">#{i + 1}</span>
                                                 <span className="font-medium truncate">
-                                                    {p.display_name || p.venmo_handle || p.user_id.slice(0, 8)}
+                                                    {p.display_name || p.venmo_handle || p.cashapp_handle || p.user_id.slice(0, 8)}
                                                     {p.user_id === currentUserId && (
                                                         <span className="ml-2 text-xs text-emerald-500 font-normal">you</span>
                                                     )}
