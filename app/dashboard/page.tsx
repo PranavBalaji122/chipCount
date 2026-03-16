@@ -99,7 +99,7 @@ export default async function DashboardPage() {
                       <Link href={`/game/${game.id}`} prefetch={true}>Open</Link>
                     </Button>
                     {isHost && (
-                      <DeleteTableButton gameId={game.id} />
+                      <DeleteTableButton gameId={game.id} gameStatus={game.status} />
                     )}
                   </div>
                 </div>
