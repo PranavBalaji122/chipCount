@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
     LineChart,
     Line,
@@ -18,9 +20,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PayoutStatsView } from "./payout-stats-view"
-import { TrendingUp, TrendingDown, Minus, History, Search, ArrowLeft, X } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus, History, Search, ArrowLeft, X, Trash2, Loader2 } from "lucide-react"
 import { formatDollar, calcPayouts } from "@/lib/utils"
 import type { GameSchema } from "@/lib/schemas"
+import { deleteSessionAt } from "@/lib/actions"
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
 
 type SessionPlayer = {
     user_id: string
@@ -65,6 +78,71 @@ const TOOLTIP_STYLE = {
 }
 
 const TICK = { fontSize: 11, fill: "var(--muted-foreground)" }
+
+function HostDeleteSessionButton({
+    gameId,
+    snapshottedAt,
+    onDeleted
+}: {
+    gameId: string
+    snapshottedAt: string
+    onDeleted: () => void
+}) {
+    const [open, setOpen] = useState(false)
+    const [pending, setPending] = useState(false)
+
+    async function handleConfirm() {
+        setPending(true)
+        try {
+            await deleteSessionAt(gameId, snapshottedAt)
+            toast.success("Session removed from history")
+            setOpen(false)
+            onDeleted()
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to delete session")
+        } finally {
+            setPending(false)
+        }
+    }
+
+    return (
+        <AlertDialog
+            open={open}
+            onOpenChange={(next) => {
+                if (!pending) setOpen(next)
+            }}
+        >
+            <AlertDialogTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label="Delete session from history"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this session?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Removes this session from metrics history and rolls back the all-time net
+                        profit recorded for each player when it was closed. Debts from that close
+                        are unchanged.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+                    <Button variant="destructive" disabled={pending} onClick={() => void handleConfirm()}>
+                        {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {pending ? "Deleting…" : "Delete session"}
+                    </Button>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}
 
 function yDomain(data: { net: number }[]): [number, number] {
     if (!data.length) return [-10, 10]
@@ -159,11 +237,17 @@ function PlayerBarChart({
 }
 
 function SessionHistoryModal({
+    gameId,
+    isHost,
     sessions,
-    onClose
+    onClose,
+    afterSessionDeleted
 }: {
+    gameId: string
+    isHost: boolean
     sessions: SessionHistoryEntry[]
     onClose: () => void
+    afterSessionDeleted: () => void
 }) {
     const [search, setSearch] = useState("")
     const [selectedSession, setSelectedSession] = useState<SessionHistoryEntry | null>(null)
@@ -213,6 +297,16 @@ function SessionHistoryModal({
                                 <h2 className="text-base sm:text-lg font-semibold truncate">Session Payouts</h2>
                                 <p className="text-xs sm:text-sm text-muted-foreground truncate">{selectedSession.label}</p>
                             </div>
+                            {isHost && (
+                                <HostDeleteSessionButton
+                                    gameId={gameId}
+                                    snapshottedAt={selectedSession.snapshotted_at}
+                                    onDeleted={() => {
+                                        setSelectedSession(null)
+                                        afterSessionDeleted()
+                                    }}
+                                />
+                            )}
                         </div>
                     ) : (
                         <div className="flex items-center gap-2">
@@ -270,46 +364,62 @@ function SessionHistoryModal({
                                         const pot = totalIn + totalOut
 
                                         return (
-                                            <button
+                                            <div
                                                 key={session.snapshotted_at}
-                                                onClick={() => setSelectedSession(session)}
-                                                className="w-full text-left rounded-xl border bg-muted/30 p-3 sm:p-4 hover:bg-muted/60 hover:border-foreground/20 transition-colors active:bg-muted/80"
+                                                className="flex gap-1 rounded-xl border bg-muted/30 hover:border-foreground/20 transition-colors overflow-hidden"
                                             >
-                                                <div className="space-y-2">
-                                                    {/* Top row - date and pot */}
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="font-medium text-sm sm:text-base">{session.label}</p>
-                                                        {pot > 0 && (
-                                                            <p className="text-xs sm:text-sm text-emerald-400 font-medium">
-                                                                {formatDollar(pot)}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    {/* Bottom row - player count and names */}
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {session.players.length} player{session.players.length !== 1 ? "s" : ""}
-                                                        </p>
-                                                        <div className="flex flex-wrap gap-1 justify-end max-w-[60%] sm:max-w-[70%]">
-                                                            {session.players.slice(0, 3).map((p) => (
-                                                                <span
-                                                                    key={p.name}
-                                                                    className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 truncate max-w-[60px] sm:max-w-[80px]"
-                                                                    title={p.name}
-                                                                >
-                                                                    {p.name}
-                                                                </span>
-                                                            ))}
-                                                            {session.players.length > 3 && (
-                                                                <span className="text-xs text-muted-foreground/60">
-                                                                    +{session.players.length - 3}
-                                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedSession(session)}
+                                                    className="min-w-0 flex-1 text-left p-3 sm:p-4 hover:bg-muted/60 active:bg-muted/80 transition-colors"
+                                                >
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="font-medium text-sm sm:text-base">{session.label}</p>
+                                                            {pot > 0 && (
+                                                                <p className="text-xs sm:text-sm text-emerald-400 font-medium shrink-0">
+                                                                    {formatDollar(pot)}
+                                                                </p>
                                                             )}
                                                         </div>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {session.players.length} player{session.players.length !== 1 ? "s" : ""}
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-1 justify-end max-w-[60%] sm:max-w-[70%]">
+                                                                {session.players.slice(0, 3).map((p) => (
+                                                                    <span
+                                                                        key={p.name}
+                                                                        className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 truncate max-w-[60px] sm:max-w-[80px]"
+                                                                        title={p.name}
+                                                                    >
+                                                                        {p.name}
+                                                                    </span>
+                                                                ))}
+                                                                {session.players.length > 3 && (
+                                                                    <span className="text-xs text-muted-foreground/60">
+                                                                        +{session.players.length - 3}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </button>
+                                                </button>
+                                                {isHost && (
+                                                    <div className="flex items-center border-l border-border/60 pr-1">
+                                                        <HostDeleteSessionButton
+                                                            gameId={gameId}
+                                                            snapshottedAt={session.snapshotted_at}
+                                                            onDeleted={() => {
+                                                                setSelectedSession((s) =>
+                                                                    s?.snapshotted_at === session.snapshotted_at ? null : s
+                                                                )
+                                                                afterSessionDeleted()
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         )
                                     })}
                                 </div>
@@ -323,6 +433,8 @@ function SessionHistoryModal({
 }
 
 export function GameMetricsClient({
+    gameId,
+    isHost,
     sessionPlayers,
     standingsPlayers,
     sessionChartPoints,
@@ -330,6 +442,8 @@ export function GameMetricsClient({
     sessionHistory,
     currentUserId
 }: {
+    gameId: string
+    isHost: boolean
     sessionPlayers: SessionPlayer[]
     standingsPlayers: StandingsPlayer[]
     sessionChartPoints: SessionChartPoint[]
@@ -337,6 +451,7 @@ export function GameMetricsClient({
     sessionHistory: SessionHistoryEntry[]
     currentUserId: string
 }) {
+    const router = useRouter()
     const [historyOpen, setHistoryOpen] = useState(false)
     const me = sessionPlayers.find((p) => p.user_id === currentUserId)
 
@@ -578,8 +693,11 @@ export function GameMetricsClient({
             {/* Session History Modal */}
             {historyOpen && (
                 <SessionHistoryModal
+                    gameId={gameId}
+                    isHost={isHost}
                     sessions={sessionHistory}
                     onClose={() => setHistoryOpen(false)}
+                    afterSessionDeleted={() => router.refresh()}
                 />
             )}
         </div>

@@ -315,4 +315,24 @@ export async function transferHost(gameId: string, newHostUserId: string) {
   revalidatePath("/dashboard")
 }
 
+export async function deleteSessionAt(gameId: string, snapshottedAt: string) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Not authenticated")
+
+  const { error } = await supabase.rpc("delete_session_at", {
+    p_game_id: gameId,
+    p_snapshotted_at: snapshottedAt,
+  })
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/game/${gameId}`)
+  revalidatePath(`/game/${gameId}/metrics`)
+  revalidatePath("/dashboard")
+  revalidatePath("/profile")
+}
+
 

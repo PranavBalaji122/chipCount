@@ -197,6 +197,8 @@ export default async function GameMetricsPage({
             </div>
 
             <GameMetricsClient
+                gameId={gameId}
+                isHost={game.host_id === user.id}
                 sessionPlayers={sessionPlayers}
                 standingsPlayers={standingsPlayers}
                 sessionChartPoints={sessionChartPoints}
