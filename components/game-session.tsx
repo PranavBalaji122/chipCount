@@ -1,16 +1,34 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, type ElementType } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { setGameStatus, kickPlayer, requestRejoin, transferHost, updateRequestedAmounts } from "@/lib/actions"
-import { calcPayouts } from "@/lib/utils"
+import { calcPayouts, formatDollar } from "@/lib/utils"
 import type { GameSchema } from "@/lib/schemas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { PayoutStatsView } from "./payout-stats-view"
-import { Loader2, Check, X, Copy, Lock, LockOpen, Crown, ArrowRightLeft } from "lucide-react"
+import {
+  Loader2,
+  Check,
+  X,
+  Copy,
+  Lock,
+  LockOpen,
+  Crown,
+  ArrowRightLeft,
+  Users,
+  UserPlus,
+  Wallet,
+  DollarSign,
+  Link2,
+  ShieldCheck,
+  AlertCircle,
+  ReceiptText
+} from "lucide-react"
 import { toast } from "sonner"
 
 type Game = {
@@ -45,6 +63,26 @@ function parseCashInput(value: string): number | null {
   if (value.toLowerCase() === "zero") return 0
   const parsed = parseFloat(value)
   return isNaN(parsed) ? null : parsed
+}
+
+function StatTile({
+  label,
+  value,
+  icon: Icon
+}: {
+  label: string
+  value: string
+  icon: ElementType
+}) {
+  return (
+    <div className="rounded-lg border bg-card px-4 py-3">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <div className="mt-2 text-xl font-semibold tabular-nums">{value}</div>
+    </div>
+  )
 }
 
 export function GameSession({
@@ -399,6 +437,23 @@ export function GameSession({
   }, [approved, guests, game.description])
 
   const payout = useMemo(() => (gameForPayout ? calcPayouts(gameForPayout) : null), [gameForPayout])
+  const activeGuests = guests.filter((g) => g.cash_in !== null || g.cash_out !== null)
+  const activeSeatCount = approved.length + activeGuests.length
+  const totalCashIn =
+    approved.reduce((sum, p) => sum + (p.cash_in ?? 0), 0) +
+    activeGuests.reduce((sum, g) => sum + (g.cash_in ?? 0), 0)
+  const totalCashOut =
+    approved.reduce((sum, p) => sum + (p.cash_out ?? 0), 0) +
+    activeGuests.reduce((sum, g) => sum + (g.cash_out ?? 0), 0)
+  const tableNet = totalCashOut - totalCashIn
+  const requestedChangeCount = approved.filter(
+    (p) => p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out
+  ).length
+  const canEndGame = activeSeatCount >= 2
+
+  function playerName(player: PlayerRow) {
+    return player.display_name || player.venmo_handle || player.user_id.slice(0, 8)
+  }
 
   async function updatePlayerFields(
     gameId: string,
@@ -540,66 +595,109 @@ export function GameSession({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle>{game.description || "Game"}</CardTitle>
-            <CardDescription>
-              Game ID: <span className="font-mono">{game.short_code}</span> — share so others can join
-              <br />
-              Invite link:{" "}
-              <span className="font-mono break-all">{inviteUrl}</span>
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            {isHost && (
-              <Button
-                variant={isClosed ? "outline" : "secondary"}
-                size="sm"
-                onClick={handleToggleClose}
-                disabled={togglingClose}
-              >
-                {togglingClose ? (
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : isClosed ? (
-                  <LockOpen className="mr-1 h-4 w-4" />
-                ) : (
-                  <Lock className="mr-1 h-4 w-4" />
+    <div className="mx-auto max-w-5xl space-y-5">
+      <Card className="overflow-hidden">
+        <CardHeader className="gap-4 border-b bg-muted/20">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={isClosed ? "secondary" : "default"} className="gap-1">
+                  {isClosed ? <Lock className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                  {isClosed ? "Closed" : "Live"}
+                </Badge>
+                {isHost && <Badge variant="outline">Host view</Badge>}
+                {pending.length > 0 && isHost && (
+                  <Badge variant="outline" className="border-yellow-500/40 text-yellow-600 dark:text-yellow-400">
+                    {pending.length} pending
+                  </Badge>
                 )}
-                {isClosed ? "Reopen Session" : "Close Session"}
+              </div>
+              <div>
+                <CardTitle className="text-2xl leading-tight">{game.description || "Game"}</CardTitle>
+                <CardDescription className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>
+                    Game ID <span className="font-mono font-medium text-foreground">{game.short_code}</span>
+                  </span>
+                  <span className="hidden text-border sm:inline">|</span>
+                  <span className="min-w-0 break-all font-mono text-xs">{inviteUrl}</span>
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+              <Button variant="outline" size="sm" onClick={copyGameLink}>
+                <Copy className="h-4 w-4" />
+                Copy invite
               </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={copyGameLink}>
-              <Copy className="mr-1 h-4 w-4" />
-              Copy link
-            </Button>
+              {isHost && (
+                <Button
+                  variant={isClosed ? "default" : "secondary"}
+                  size="sm"
+                  onClick={handleToggleClose}
+                  disabled={togglingClose}
+                >
+                  {togglingClose ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isClosed ? (
+                    <LockOpen className="h-4 w-4" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  {isClosed ? "Reopen" : "Close session"}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
+        <CardContent className="pt-5">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Seats" value={`${activeSeatCount}`} icon={Users} />
+            <StatTile label="Cash in" value={formatDollar(totalCashIn)} icon={Wallet} />
+            <StatTile label="Cash out" value={formatDollar(totalCashOut)} icon={DollarSign} />
+            <StatTile label="Table net" value={formatDollar(tableNet)} icon={ReceiptText} />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Link2 className="h-4 w-4" />
+            {payout ? "Payouts are ready below." : "Add at least two active seats to calculate payouts."}
+            {requestedChangeCount > 0 && (
+              <span className="rounded-full bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                {requestedChangeCount} amount request{requestedChangeCount === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+        </CardContent>
       </Card>
+
+      {isClosed && (
+        <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-300">
+          <Lock className="h-4 w-4 shrink-0" />
+          Session is closed. Players can review amounts; the host can reopen the table for more changes.
+        </div>
+      )}
 
       {pending.length > 0 && isHost && (
         <Card>
           <CardHeader>
-            <CardTitle>Pending approval</CardTitle>
-            <CardDescription>Approve or deny players to join the game</CardDescription>
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Pending approval</CardTitle>
+            </div>
+            <CardDescription>Review join requests before they enter the table.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {pending.map((p) => (
               <div
                 key={p.user_id}
-                className="flex items-center justify-between rounded border px-3 py-2"
+                className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex flex-col gap-1">
-                  <span>{p.display_name || p.user_id.slice(0, 8)}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Requested in: {p.requested_cash_in ?? 0} / out: {p.requested_cash_out ?? 0}
-                  </span>
+                <div className="min-w-0">
+                  <div className="font-medium">{playerName(p)}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Buy-in {formatDollar(p.requested_cash_in ?? 0)} · Cash-out {formatDollar(p.requested_cash_out ?? 0)}
+                  </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   <Button
                     size="sm"
-                    variant="default"
                     disabled={updating === p.user_id}
                     onClick={() =>
                       updatePlayerFields(game.id, p.user_id, {
@@ -616,7 +714,7 @@ export function GameSession({
                   </Button>
                   <Button
                     size="sm"
-                    variant="destructive"
+                    variant="outline"
                     disabled={updating === p.user_id}
                     onClick={() => setStatus(game.id, p.user_id, "denied")}
                   >
@@ -632,252 +730,150 @@ export function GameSession({
 
       <Card>
         <CardHeader>
-          <CardTitle>Players & amounts</CardTitle>
-          <CardDescription>
-            {isClosed
-              ? "Session is closed — amounts are locked. Host can reopen to allow edits."
-              : "Cash in / out per player (editable by host or self if approved)"}
-          </CardDescription>
-        </CardHeader>
-        {isClosed && (
-          <div className="mx-6 mb-2 flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-500">
-            <Lock className="h-4 w-4 shrink-0" />
-            Session closed — all edits are locked until the host reopens it.
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Table</CardTitle>
+              <CardDescription>
+                Buy-ins, cash-outs, guests, and player status in one place.
+              </CardDescription>
+            </div>
+            <Badge variant="outline">{approved.length} approved</Badge>
           </div>
-        )}
-        <CardContent>
-          <div className="space-y-3">
-            {players.map((p) => (
-              <div
-                key={p.user_id}
-                className="flex flex-wrap items-center gap-2 rounded border p-2"
-              >
-                {/* Player name: host can click approved players to open action modal */}
-                <span className="font-medium">
-                  {isHost && p.status === "approved" && p.user_id !== currentUserId ? (
-                    <button
-                      className="cursor-pointer text-left underline underline-offset-2 decoration-white"
-                      onClick={() => {
-                        setSelectedPlayer(p)
-                        setTransferConfirm(false)
-                      }}
-                    >
-                      {p.display_name || p.user_id.slice(0, 8)}
-                    </button>
-                  ) : (
-                    p.display_name || p.user_id.slice(0, 8)
-                  )}
-                  {p.status === "pending" && (
-                    <span className="text-muted-foreground ml-1 text-sm">(pending)</span>
-                  )}
-                  {p.status === "denied" && (
-                    <span className="text-muted-foreground ml-1 text-sm">(denied)</span>
-                  )}
-                </span>
-                {p.status === "approved" && (
-                  <>
-                    {/* Host controls: always editable, even when session is closed */}
-                    {isHost && (
-                      <div className="flex flex-col gap-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Input
-                            className="w-24"
-                            placeholder="In"
-                            value={p.cash_in === null || p.cash_in === undefined ? "" : p.cash_in.toString()}
-                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_in`, true)}
-                            onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setPlayers((prev) =>
-                                prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, cash_in: v } : x
-                                )
-                              )
-                            }}
-                            onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setFieldEditing(`host-${p.user_id}-cash_in`, false)
-                              updateCash(game.id, p.user_id, v, p.cash_out)
-                            }}
-                          />
-                          <Input
-                            className="w-24"
-                            placeholder="Out"
-                            value={p.cash_out === null || p.cash_out === undefined ? "" : p.cash_out.toString()}
-                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_out`, true)}
-                            onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setPlayers((prev) =>
-                                prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, cash_out: v } : x
-                                )
-                              )
-                            }}
-                            onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setFieldEditing(`host-${p.user_id}-cash_out`, false)
-                              updateCash(game.id, p.user_id, p.cash_in, v)
-                            }}
-                          />
-                        </div>
-                        {!isClosed && (p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out) && (
-                          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                            {p.requested_cash_in !== p.cash_in && (
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="flex-1">
-                                  Requested in: {p.requested_cash_in ?? 0} (current {p.cash_in ?? 0})
-                                </span>
-                                <div className="flex gap-1 shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        cash_in: p.requested_cash_in,
-                                        requested_cash_in: p.requested_cash_in
-                                      })
-                                    }
-                                  >
-                                    <Check className="mr-1 h-3 w-3" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        requested_cash_in: p.cash_in
-                                      })
-                                    }
-                                  >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Deny
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                            {p.requested_cash_out !== p.cash_out && (
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="flex-1">
-                                  Requested out: {p.requested_cash_out ?? 0} (current {p.cash_out ?? 0})
-                                </span>
-                                <div className="flex gap-1 shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        cash_out: p.requested_cash_out,
-                                        requested_cash_out: p.requested_cash_out
-                                      })
-                                    }
-                                  >
-                                    <Check className="mr-1 h-3 w-3" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        requested_cash_out: p.cash_out
-                                      })
-                                    }
-                                  >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Deny
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="hidden grid-cols-[minmax(0,1.35fr)_120px_120px_minmax(120px,0.8fr)_40px] gap-3 px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+            <span>Player</span>
+            <span>Buy-in</span>
+            <span>Cash-out</span>
+            <span>Status</span>
+            <span />
+          </div>
 
-                    {/* Non-host self: editable inputs when open, read-only when closed */}
-                    {!isHost && p.user_id === currentUserId && !isClosed && (
-                      <div className="flex flex-col gap-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Input
-                            className="w-24"
-                            placeholder="In"
-                            value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
-                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_in`, true)}
-                            onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setPlayers((prev) =>
-                                prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x
-                                )
-                              )
-                            }}
-                            onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setFieldEditing(`self-${p.user_id}-requested_cash_in`, false)
-                              updateRequestedCash(game.id, p.user_id, v, p.requested_cash_out)
-                            }}
-                          />
-                          <Input
-                            className="w-24"
-                            placeholder="Out"
-                            value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
-                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_out`, true)}
-                            onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setPlayers((prev) =>
-                                prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x
-                                )
-                              )
-                            }}
-                            onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
-                              setFieldEditing(`self-${p.user_id}-requested_cash_out`, false)
-                              updateRequestedCash(game.id, p.user_id, p.requested_cash_in, v)
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          Current approved: In {p.cash_in ?? 0} / Out {p.cash_out ?? 0}
-                          {(p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out) &&
-                            " — awaiting host approval"}
-                        </span>
-                      </div>
-                    )}
+          {players.map((p) => {
+            const hasRequest =
+              p.status === "approved" &&
+              !isClosed &&
+              (p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out)
 
-                    {/* Non-host self: read-only when closed */}
-                    {!isHost && p.user_id === currentUserId && isClosed && (
-                      <span className="text-muted-foreground text-sm">
-                        In: {p.cash_in ?? 0} / Out: {p.cash_out ?? 0}
-                      </span>
-                    )}
-
-                    {/* Other players: always read-only */}
-                    {!isHost && p.user_id !== currentUserId && (
-                      <span className="text-muted-foreground text-sm">
-                        In: {p.cash_in ?? 0} / Out: {p.cash_out ?? 0}
-                      </span>
-                    )}
-                  </>
-                )}
-                {p.status === "pending" && !isHost && p.user_id === currentUserId && !isClosed && (
-                  <div className="flex flex-col gap-1">
+            return (
+              <div key={p.user_id} className="rounded-lg border bg-card p-3">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1.35fr)_120px_120px_minmax(120px,0.8fr)_40px] md:items-center">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-medium">{playerName(p)}</span>
+                      {p.user_id === currentUserId && <Badge variant="outline">You</Badge>}
+                      {p.status !== "approved" && <Badge variant="secondary">{p.status}</Badge>}
+                    </div>
+                    {p.venmo_handle && (
+                      <div className="mt-1 truncate text-xs text-muted-foreground">@{p.venmo_handle}</div>
+                    )}
+                  </div>
+
+                  {p.status === "approved" && isHost && (
+                    <>
                       <Input
-                        className="w-24"
-                        placeholder="Requested in"
+                        aria-label={`${playerName(p)} buy-in`}
+                        className="h-10 tabular-nums"
+                        placeholder="Buy-in"
+                        value={p.cash_in === null || p.cash_in === undefined ? "" : p.cash_in.toString()}
+                        onFocus={() => setFieldEditing(`host-${p.user_id}-cash_in`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setPlayers((prev) =>
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, cash_in: v } : x))
+                          )
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`host-${p.user_id}-cash_in`, false)
+                          updateCash(game.id, p.user_id, v, p.cash_out)
+                        }}
+                      />
+                      <Input
+                        aria-label={`${playerName(p)} cash-out`}
+                        className="h-10 tabular-nums"
+                        placeholder="Cash-out"
+                        value={p.cash_out === null || p.cash_out === undefined ? "" : p.cash_out.toString()}
+                        onFocus={() => setFieldEditing(`host-${p.user_id}-cash_out`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setPlayers((prev) =>
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, cash_out: v } : x))
+                          )
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`host-${p.user_id}-cash_out`, false)
+                          updateCash(game.id, p.user_id, p.cash_in, v)
+                        }}
+                      />
+                    </>
+                  )}
+
+                  {p.status === "approved" && !isHost && p.user_id === currentUserId && !isClosed && (
+                    <>
+                      <Input
+                        aria-label="Your requested buy-in"
+                        className="h-10 tabular-nums"
+                        placeholder="Buy-in"
+                        value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
+                        onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_in`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setPlayers((prev) =>
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x))
+                          )
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`self-${p.user_id}-requested_cash_in`, false)
+                          updateRequestedCash(game.id, p.user_id, v, p.requested_cash_out)
+                        }}
+                      />
+                      <Input
+                        aria-label="Your requested cash-out"
+                        className="h-10 tabular-nums"
+                        placeholder="Cash-out"
+                        value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
+                        onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_out`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setPlayers((prev) =>
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x))
+                          )
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`self-${p.user_id}-requested_cash_out`, false)
+                          updateRequestedCash(game.id, p.user_id, p.requested_cash_in, v)
+                        }}
+                      />
+                    </>
+                  )}
+
+                  {p.status === "approved" && (!isHost && (p.user_id !== currentUserId || isClosed)) && (
+                    <>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm tabular-nums">
+                        {formatDollar(p.cash_in ?? 0)}
+                      </div>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm tabular-nums">
+                        {formatDollar(p.cash_out ?? 0)}
+                      </div>
+                    </>
+                  )}
+
+                  {p.status === "pending" && !isHost && p.user_id === currentUserId && !isClosed && (
+                    <>
+                      <Input
+                        aria-label="Requested buy-in"
+                        className="h-10 tabular-nums"
+                        placeholder="Buy-in"
                         value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
                         onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_in`, true)}
                         onChange={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
                           setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x
-                            )
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x))
                           )
                         }}
                         onBlur={(e) => {
@@ -889,16 +885,15 @@ export function GameSession({
                         }}
                       />
                       <Input
-                        className="w-24"
-                        placeholder="Requested out"
+                        aria-label="Requested cash-out"
+                        className="h-10 tabular-nums"
+                        placeholder="Cash-out"
                         value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
                         onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_out`, true)}
                         onChange={(e) => {
                           const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
                           setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x
-                            )
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x))
                           )
                         }}
                         onBlur={(e) => {
@@ -909,18 +904,152 @@ export function GameSession({
                           )
                         }}
                       />
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      Waiting for host to approve your join request and amounts.
-                    </span>
+                    </>
+                  )}
+
+                  {p.status !== "approved" && !(p.status === "pending" && !isHost && p.user_id === currentUserId && !isClosed) && (
+                    <>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">-</div>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">-</div>
+                    </>
+                  )}
+
+                  <div className="text-sm text-muted-foreground">
+                    {p.status === "approved" && hasRequest && <span className="text-yellow-600 dark:text-yellow-400">Review request</span>}
+                    {p.status === "approved" && !hasRequest && (p.user_id === currentUserId ? "Your seat" : "Approved")}
+                    {p.status === "pending" && "Awaiting host"}
+                    {p.status === "denied" && "Removed"}
+                  </div>
+
+                  <div className="flex justify-end gap-1">
+                    {isHost && p.status === "approved" && p.user_id !== currentUserId && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={`Manage ${playerName(p)}`}
+                        onClick={() => {
+                          setSelectedPlayer(p)
+                          setTransferConfirm(false)
+                        }}
+                      >
+                        <Crown className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isHost && p.user_id !== currentUserId && (
+                      <button
+                        className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:opacity-40 ${
+                          p.status === "denied"
+                            ? "text-muted-foreground hover:bg-green-500/10 hover:text-green-500"
+                            : "text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                        }`}
+                        title={p.status === "denied" ? "Approve player" : "Remove player"}
+                        disabled={kicking === p.user_id || updating === p.user_id}
+                        onClick={() => {
+                          if (p.status === "denied") {
+                            updatePlayerFields(game.id, p.user_id, { status: "approved" })
+                          } else {
+                            handleKick(p.user_id)
+                          }
+                        }}
+                      >
+                        {(kicking === p.user_id || updating === p.user_id) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : p.status === "denied" ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <X className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {hasRequest && isHost && (
+                  <div className="mt-3 space-y-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm">
+                    {p.requested_cash_in !== p.cash_in && (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span>
+                          Buy-in request: {formatDollar(p.requested_cash_in ?? 0)} from {formatDollar(p.cash_in ?? 0)}
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={updating === p.user_id}
+                            onClick={() =>
+                              updatePlayerFields(game.id, p.user_id, {
+                                cash_in: p.requested_cash_in,
+                                requested_cash_in: p.requested_cash_in
+                              })
+                            }
+                          >
+                            <Check className="h-3 w-3" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={updating === p.user_id}
+                            onClick={() => updatePlayerFields(game.id, p.user_id, { requested_cash_in: p.cash_in })}
+                          >
+                            <X className="h-3 w-3" />
+                            Deny
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {p.requested_cash_out !== p.cash_out && (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span>
+                          Cash-out request: {formatDollar(p.requested_cash_out ?? 0)} from {formatDollar(p.cash_out ?? 0)}
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={updating === p.user_id}
+                            onClick={() =>
+                              updatePlayerFields(game.id, p.user_id, {
+                                cash_out: p.requested_cash_out,
+                                requested_cash_out: p.requested_cash_out
+                              })
+                            }
+                          >
+                            <Check className="h-3 w-3" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={updating === p.user_id}
+                            onClick={() => updatePlayerFields(game.id, p.user_id, { requested_cash_out: p.cash_out })}
+                          >
+                            <X className="h-3 w-3" />
+                            Deny
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-                {/* Denied self: offer to request rejoin */}
+
+                {!isHost && p.user_id === currentUserId && p.status === "approved" && !isClosed && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Approved: buy-in {formatDollar(p.cash_in ?? 0)} · cash-out {formatDollar(p.cash_out ?? 0)}
+                    {hasRequest && " · awaiting host approval"}
+                  </div>
+                )}
+
+                {!isHost && p.user_id === currentUserId && p.status === "pending" && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Waiting for the host to approve your seat.
+                  </div>
+                )}
+
                 {!isHost && p.user_id === currentUserId && p.status === "denied" && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-red-400">
-                      You were removed from this table.
-                    </span>
+                  <div className="mt-3 flex flex-col gap-2 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">
+                    <span>You were removed from this table.</span>
                     <Button
                       size="sm"
                       variant="outline"
@@ -929,11 +1058,8 @@ export function GameSession({
                         setUpdating(p.user_id)
                         try {
                           await requestRejoin(game.id)
-                          // Optimistically flip to pending in local state
                           setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, status: "pending" } : x
-                            )
+                            prev.map((x) => (x.user_id === p.user_id ? { ...x, status: "pending" } : x))
                           )
                           toast.success("Rejoin request sent — waiting for host approval")
                         } catch {
@@ -943,153 +1069,167 @@ export function GameSession({
                         }
                       }}
                     >
-                      {updating === p.user_id
-                        ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        : null}
-                      Request to Rejoin
+                      {updating === p.user_id && <Loader2 className="h-4 w-4 animate-spin" />}
+                      Request to rejoin
                     </Button>
                   </div>
                 )}
-
-                {/* Action button — host only, not on self */}
-                {isHost && p.user_id !== currentUserId && (
-                  <button
-                    className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
-                      p.status === "denied"
-                        ? "text-muted-foreground hover:bg-green-500/10 hover:text-green-500"
-                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
-                    }`}
-                    title={p.status === "denied" ? "Approve player" : "Remove player"}
-                    disabled={kicking === p.user_id || updating === p.user_id}
-                    onClick={() => {
-                      if (p.status === "denied") {
-                        updatePlayerFields(game.id, p.user_id, { status: "approved" })
-                      } else {
-                        handleKick(p.user_id)
-                      }
-                    }}
-                  >
-                    {(kicking === p.user_id || updating === p.user_id) ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : p.status === "denied" ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <X className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                )}
               </div>
-            ))}
-            
-            {/* Guest section — visible to everyone, editable by host */}
-            {guests.map((guest) => (
-              <div
-                key={guest.id}
-                className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 rounded border p-3"
-              >
-                <span className="font-medium flex-shrink-0">
-                  {guest.name}
-                  <span className="text-muted-foreground ml-1 text-sm">(guest)</span>
-                </span>
-                {isHost ? (
-                  <div className="flex items-center gap-2 sm:flex-1">
-                    <Input
-                      className="flex-1 sm:w-24 sm:flex-initial"
-                      placeholder="In"
-                      value={guest.cash_in === null || guest.cash_in === undefined ? "" : guest.cash_in.toString()}
-                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_in`, true)}
-                      onChange={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_in: v } : g)))
-                      }}
-                      onBlur={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setFieldEditing(`guest-${guest.id}-cash_in`, false)
-                        updateGuestDb(guest.id, { cash_in: v })
-                      }}
-                      disabled={isClosed}
-                    />
-                    <Input
-                      className="flex-1 sm:w-24 sm:flex-initial"
-                      placeholder="Out"
-                      value={guest.cash_out === null || guest.cash_out === undefined ? "" : guest.cash_out.toString()}
-                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_out`, true)}
-                      onChange={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_out: v } : g)))
-                      }}
-                      onBlur={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setFieldEditing(`guest-${guest.id}-cash_out`, false)
-                        updateGuestDb(guest.id, { cash_out: v })
-                      }}
-                      disabled={isClosed}
-                    />
-                    <button
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                      title="Remove guest"
-                      onClick={() => removeGuest(guest.id)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+            )
+          })}
+
+          <div className="pt-2">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+              Guests
+            </div>
+            <div className="space-y-3">
+              {guests.map((guest) => (
+                <div
+                  key={guest.id}
+                  className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-[minmax(0,1.35fr)_120px_120px_minmax(120px,0.8fr)_40px] md:items-center"
+                >
+                  <div className="min-w-0">
+                    <span className="font-medium">{guest.name}</span>
+                    <Badge variant="secondary" className="ml-2">Guest</Badge>
                   </div>
-                ) : (
-                  <span className="text-muted-foreground text-sm">
-                    In: {guest.cash_in ?? 0} / Out: {guest.cash_out ?? 0}
-                  </span>
-                )}
-              </div>
-            ))}
+                  {isHost ? (
+                    <>
+                      <Input
+                        aria-label={`${guest.name} guest buy-in`}
+                        className="h-10 tabular-nums"
+                        placeholder="Buy-in"
+                        value={guest.cash_in === null || guest.cash_in === undefined ? "" : guest.cash_in.toString()}
+                        onFocus={() => setFieldEditing(`guest-${guest.id}-cash_in`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_in: v } : g)))
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`guest-${guest.id}-cash_in`, false)
+                          updateGuestDb(guest.id, { cash_in: v })
+                        }}
+                        disabled={isClosed}
+                      />
+                      <Input
+                        aria-label={`${guest.name} guest cash-out`}
+                        className="h-10 tabular-nums"
+                        placeholder="Cash-out"
+                        value={guest.cash_out === null || guest.cash_out === undefined ? "" : guest.cash_out.toString()}
+                        onFocus={() => setFieldEditing(`guest-${guest.id}-cash_out`, true)}
+                        onChange={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_out: v } : g)))
+                        }}
+                        onBlur={(e) => {
+                          const v = parseCashInput(e.target.value)
+                          setFieldEditing(`guest-${guest.id}-cash_out`, false)
+                          updateGuestDb(guest.id, { cash_out: v })
+                        }}
+                        disabled={isClosed}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm tabular-nums">
+                        {formatDollar(guest.cash_in ?? 0)}
+                      </div>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-sm tabular-nums">
+                        {formatDollar(guest.cash_out ?? 0)}
+                      </div>
+                    </>
+                  )}
+                  <div className="text-sm text-muted-foreground">Guest</div>
+                  <div className="flex justify-end">
+                    {isHost && (
+                      <button
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                        title="Remove guest"
+                        onClick={() => removeGuest(guest.id)}
+                        disabled={isClosed}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
 
-            {/* Add guest form — host only */}
-            {isHost && !isClosed && (
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 rounded border p-3 bg-muted/20 border-muted/40">
-                <Input
-                  className="flex-1 sm:flex-initial sm:w-32 min-w-0"
-                  placeholder="Guest name"
-                  value={guestForm.name}
-                  onChange={(e) => handleGuestNameChange(e.target.value)}
-                  onBlur={handleGuestNameBlur}
-                />
-                <div className="flex gap-2">
+              {isHost && !isClosed && (
+                <div className="grid gap-3 rounded-lg border border-dashed bg-muted/20 p-3 md:grid-cols-[minmax(0,1.35fr)_120px_120px_minmax(120px,0.8fr)_40px] md:items-center">
                   <Input
-                    className="flex-1 sm:w-24"
-                    placeholder="In"
+                    className="h-10 min-w-0"
+                    placeholder="Add guest name"
+                    value={guestForm.name}
+                    onChange={(e) => handleGuestNameChange(e.target.value)}
+                    onBlur={handleGuestNameBlur}
+                  />
+                  <Input
+                    className="h-10 tabular-nums"
+                    placeholder="Buy-in"
                     value={guestForm.cash_in}
                     onChange={(e) => setGuestForm((prev) => ({ ...prev, cash_in: e.target.value }))}
                   />
                   <Input
-                    className="flex-1 sm:w-24"
-                    placeholder="Out"
+                    className="h-10 tabular-nums"
+                    placeholder="Cash-out"
                     value={guestForm.cash_out}
                     onChange={(e) => setGuestForm((prev) => ({ ...prev, cash_out: e.target.value }))}
                   />
+                  <div className="text-sm text-muted-foreground">Auto-adds on blur</div>
+                  <span />
                 </div>
-              </div>
-            )}
+              )}
+
+              {guests.length === 0 && !(isHost && !isClosed) && (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  No guests at this table.
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {payout && (
-        <>
-          <h2 className="text-lg font-semibold">Payout summary</h2>
-          <PayoutStatsView payout={payout} />
-        </>
-      )}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ReceiptText className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Payout summary</CardTitle>
+          </div>
+          <CardDescription>
+            Settlement updates as table amounts change.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {payout ? (
+            <PayoutStatsView payout={payout} />
+          ) : (
+            <div className="flex items-start gap-3 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              Add at least two approved players or guests with amounts to calculate payouts.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {isHost && (
-        <div className="flex justify-end gap-2">
-          {(approved.length + guests.filter(g => g.cash_in !== null || g.cash_out !== null).length) >= 2 && (
-            <Button
-              onClick={handleEndGame}
-              disabled={ending}
-              variant="destructive"
-            >
-              {ending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              End Game
-            </Button>
-          )}
+        <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="font-medium">Ready to finish?</div>
+            <div className="text-sm text-muted-foreground">
+              Ending the game records profits and sends everyone back to the dashboard.
+            </div>
+          </div>
+          <Button
+            onClick={handleEndGame}
+            disabled={ending || !canEndGame || !payout}
+            variant="destructive"
+          >
+            {ending && <Loader2 className="h-4 w-4 animate-spin" />}
+            End game
+          </Button>
         </div>
       )}
 
