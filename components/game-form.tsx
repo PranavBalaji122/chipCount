@@ -103,11 +103,13 @@ const PlayerField = ({
   control,
   name,
   placeholder,
+  label,
   className
 }: {
   control: Control<GameSchema>
   name: `players.${number}.name`
   placeholder: string
+  label: string
   className?: string
 }) => (
   <FormField
@@ -116,7 +118,7 @@ const PlayerField = ({
     render={({ field }) => (
       <FormItem className={className}>
         <FormControl>
-          <Input placeholder={placeholder} {...field} />
+          <Input placeholder={placeholder} aria-label={label} {...field} />
         </FormControl>
         <FormMessage />
       </FormItem>
@@ -127,11 +129,13 @@ const PlayerField = ({
 const NumericPlayerField = ({
   control,
   name,
-  placeholder
+  placeholder,
+  label
 }: {
   control: Control<GameSchema>
   name: `players.${number}.cashIn` | `players.${number}.cashOut`
   placeholder: string
+  label: string
 }) => (
   <FormField
     control={control}
@@ -142,6 +146,7 @@ const NumericPlayerField = ({
           <Input
             type="number"
             placeholder={placeholder}
+            aria-label={label}
             {...field}
             onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
           />
@@ -176,22 +181,26 @@ const PlayerFields = ({
           control={form.control}
           name={`players.${index}.name`}
           placeholder={`Player ${index + 1}`}
+          label={`Player ${index + 1} name`}
           className="grow"
         />
         <NumericPlayerField
           control={form.control}
           name={`players.${index}.cashIn`}
           placeholder="In"
+          label={`Cash in for player ${index + 1}`}
         />
         <NumericPlayerField
           control={form.control}
           name={`players.${index}.cashOut`}
           placeholder="Out"
+          label={`Cash out for player ${index + 1}`}
         />
         <Button
           type="button"
           variant="destructive"
           size="icon"
+          aria-label={`Remove player ${index + 1}`}
           onClick={() => remove(index)}
           disabled={fields.length <= 2}
         >

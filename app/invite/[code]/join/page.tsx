@@ -62,9 +62,11 @@ export default async function InviteJoinPage({
   }
 
   return (
-    <JoinRequestForm
-      gameId={game.id}
-      gameDescription={game.description ?? undefined}
-    />
+    <main id="main-content" tabIndex={-1}>
+      <JoinRequestForm
+        gameId={game.id}
+        gameDescription={game.description ?? undefined}
+      />
+    </main>
   )
 }

@@ -15,7 +15,12 @@ export function CopyButton({ textToCopy }: { textToCopy: string }) {
   }
 
   return (
-    <Button onClick={handleCopy} variant="outline" size="icon">
+    <Button
+      onClick={handleCopy}
+      variant="outline"
+      size="icon"
+      aria-label={copied ? "Copied" : "Copy"}
+    >
       {copied ? (
         <Check className="h-4 w-4 text-green-500" />
       ) : (

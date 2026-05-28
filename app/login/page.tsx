@@ -13,8 +13,12 @@ export default async function LoginPage({
 }) {
   const params = await searchParams
   return (
-    <div className="flex min-h-[80vh] flex-col items-center justify-center">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-[80vh] flex-col items-center justify-center"
+    >
       <LoginForm next={params.next} />
-    </div>
+    </main>
   )
 }

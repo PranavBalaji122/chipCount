@@ -22,7 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-background antialiased`}>
+      <body
+        className={`${inter.className} min-h-screen bg-background antialiased`}
+      >
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <NuqsAdapter>{children}</NuqsAdapter>
         <Toaster richColors expand={false} position="bottom-center" />
         <Analytics />
