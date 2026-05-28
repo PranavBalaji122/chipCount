@@ -3,14 +3,42 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { setGameStatus, kickPlayer, requestRejoin, transferHost, updateRequestedAmounts } from "@/lib/actions"
+import {
+  setGameStatus,
+  kickPlayer,
+  requestRejoin,
+  transferHost,
+  updateRequestedAmounts
+} from "@/lib/actions"
 import { calcPayouts } from "@/lib/utils"
 import type { GameSchema } from "@/lib/schemas"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { PayoutStatsView } from "./payout-stats-view"
-import { Loader2, Check, X, Copy, Lock, LockOpen, Crown, ArrowRightLeft } from "lucide-react"
+import {
+  Loader2,
+  Check,
+  X,
+  Copy,
+  Lock,
+  LockOpen,
+  Crown,
+  ArrowRightLeft
+} from "lucide-react"
 import { toast } from "sonner"
 
 type Game = {
@@ -71,15 +99,20 @@ export function GameSession({
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
   const [transferring, setTransferring] = useState(false)
   const [transferConfirm, setTransferConfirm] = useState(false)
-  
+  const [copyFeedback, setCopyFeedback] = useState("")
+
   // Guest functionality — persisted to game_guests table
   const [guests, setGuests] = useState<GuestPlayer[]>([])
-  const [guestForm, setGuestForm] = useState({ name: "", cash_in: "", cash_out: "" })
+  const [guestForm, setGuestForm] = useState({
+    name: "",
+    cash_in: "",
+    cash_out: ""
+  })
   const [lastGameStatus, setLastGameStatus] = useState(game.status)
-  
+
   // Track fields currently being edited to prevent overwrites (ref so fetchAll always sees current value)
   const editingFieldsRef = useRef<Set<string>>(new Set())
-  
+
   const setFieldEditing = (fieldKey: string, editing: boolean) => {
     if (editing) {
       editingFieldsRef.current.add(fieldKey)
@@ -93,7 +126,12 @@ export function GameSession({
 
   // Auto-delete guests when session is reopened (closed -> active)
   useEffect(() => {
-    if (lastGameStatus === "closed" && gameStatus === "active" && isHost && guests.length > 0) {
+    if (
+      lastGameStatus === "closed" &&
+      gameStatus === "active" &&
+      isHost &&
+      guests.length > 0
+    ) {
       // Delete all guests from database
       const deleteGuests = async () => {
         const supabase = createClient()
@@ -121,7 +159,10 @@ export function GameSession({
   const isClosed = gameStatus === "closed"
   const approved = players.filter((p) => p.status === "approved")
   const pending = players.filter((p) => p.status === "pending")
-  
+
+  const playerName = (p: PlayerRow) =>
+    p.display_name || p.venmo_handle || `Player ${p.user_id.slice(0, 8)}`
+
   // Guest management — persisted to Supabase
   async function addGuest(name: string) {
     if (!name.trim()) return
@@ -134,7 +175,7 @@ export function GameSession({
         game_id: game.id,
         name: name.trim(),
         cash_in: cashIn ?? 0,
-        cash_out: cashOut ?? 0,
+        cash_out: cashOut ?? 0
       })
       .select("id, name, cash_in, cash_out")
       .single()
@@ -142,7 +183,15 @@ export function GameSession({
       toast.error("Failed to add guest")
       return
     }
-    setGuests((prev) => [...prev, { id: data.id, name: data.name, cash_in: data.cash_in, cash_out: data.cash_out }])
+    setGuests((prev) => [
+      ...prev,
+      {
+        id: data.id,
+        name: data.name,
+        cash_in: data.cash_in,
+        cash_out: data.cash_out
+      }
+    ])
     setGuestForm({ name: "", cash_in: "", cash_out: "" })
     toast.success(`Guest "${data.name}" added`)
   }
@@ -154,14 +203,21 @@ export function GameSession({
   function handleGuestNameBlur() {
     const name = guestForm.name.trim()
     if (!name) return
-    const existsAlready = guests.some((g) => g.name.toLowerCase() === name.toLowerCase())
+    const existsAlready = guests.some(
+      (g) => g.name.toLowerCase() === name.toLowerCase()
+    )
     if (!existsAlready) {
       addGuest(name)
     }
   }
 
-  async function updateGuestDb(guestId: string, updates: Partial<Pick<GuestPlayer, "cash_in" | "cash_out">>) {
-    setGuests((prev) => prev.map((g) => (g.id === guestId ? { ...g, ...updates } : g)))
+  async function updateGuestDb(
+    guestId: string,
+    updates: Partial<Pick<GuestPlayer, "cash_in" | "cash_out">>
+  ) {
+    setGuests((prev) =>
+      prev.map((g) => (g.id === guestId ? { ...g, ...updates } : g))
+    )
     const supabase = createClient()
     const patch: Record<string, number> = {}
     if (updates.cash_in !== undefined) patch.cash_in = updates.cash_in ?? 0
@@ -202,7 +258,9 @@ export function GameSession({
       setTransferConfirm(false)
       router.refresh()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to transfer host")
+      toast.error(
+        err instanceof Error ? err.message : "Failed to transfer host"
+      )
     } finally {
       setTransferring(false)
     }
@@ -224,51 +282,88 @@ export function GameSession({
 
     const { data } = await supabase
       .from("game_players")
-      .select("user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)")
+      .select(
+        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
+      )
       .eq("game_id", game.id)
     if (data) {
-      const newPlayers = data.map((p: {
-        user_id: string
-        status: string
-        cash_in: number | null
-        cash_out: number | null
-        requested_cash_in: number | null
-        requested_cash_out: number | null
-        profile: { display_name: string | null; venmo_handle: string | null } | { display_name: string | null; venmo_handle: string | null }[] | null
-      }) => {
-        const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
-        return {
-          user_id: p.user_id,
-          status: p.status as "pending" | "approved" | "denied",
-          cash_in: p.cash_in === null ? null : Number(p.cash_in),
-          cash_out: p.cash_out === null ? null : Number(p.cash_out),
-          requested_cash_in: p.requested_cash_in === null ? (p.cash_in === null ? null : Number(p.cash_in)) : Number(p.requested_cash_in),
-          requested_cash_out: p.requested_cash_out === null ? (p.cash_out === null ? null : Number(p.cash_out)) : Number(p.requested_cash_out),
-          display_name: prof?.display_name ?? null,
-          venmo_handle: prof?.venmo_handle ?? null,
+      const newPlayers = data.map(
+        (p: {
+          user_id: string
+          status: string
+          cash_in: number | null
+          cash_out: number | null
+          requested_cash_in: number | null
+          requested_cash_out: number | null
+          profile:
+            | { display_name: string | null; venmo_handle: string | null }
+            | { display_name: string | null; venmo_handle: string | null }[]
+            | null
+        }) => {
+          const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
+          return {
+            user_id: p.user_id,
+            status: p.status as "pending" | "approved" | "denied",
+            cash_in: p.cash_in === null ? null : Number(p.cash_in),
+            cash_out: p.cash_out === null ? null : Number(p.cash_out),
+            requested_cash_in:
+              p.requested_cash_in === null
+                ? p.cash_in === null
+                  ? null
+                  : Number(p.cash_in)
+                : Number(p.requested_cash_in),
+            requested_cash_out:
+              p.requested_cash_out === null
+                ? p.cash_out === null
+                  ? null
+                  : Number(p.cash_out)
+                : Number(p.requested_cash_out),
+            display_name: prof?.display_name ?? null,
+            venmo_handle: prof?.venmo_handle ?? null
+          }
         }
-      })
-      
+      )
+
       // Merge with existing players to preserve editing state
-      setPlayers(prevPlayers => {
-        return newPlayers.map(newPlayer => {
-          const existing = prevPlayers.find(p => p.user_id === newPlayer.user_id)
+      setPlayers((prevPlayers) => {
+        return newPlayers.map((newPlayer) => {
+          const existing = prevPlayers.find(
+            (p) => p.user_id === newPlayer.user_id
+          )
           if (!existing) return newPlayer
-          
+
           const ef = editingFieldsRef.current
           const hostEditingCashIn = ef.has(`host-${newPlayer.user_id}-cash_in`)
-          const hostEditingCashOut = ef.has(`host-${newPlayer.user_id}-cash_out`)
-          const selfEditingRequestedIn = ef.has(`self-${newPlayer.user_id}-requested_cash_in`)
-          const selfEditingRequestedOut = ef.has(`self-${newPlayer.user_id}-requested_cash_out`)
-          const pendingEditingRequestedIn = ef.has(`pending-${newPlayer.user_id}-requested_cash_in`)
-          const pendingEditingRequestedOut = ef.has(`pending-${newPlayer.user_id}-requested_cash_out`)
-          
+          const hostEditingCashOut = ef.has(
+            `host-${newPlayer.user_id}-cash_out`
+          )
+          const selfEditingRequestedIn = ef.has(
+            `self-${newPlayer.user_id}-requested_cash_in`
+          )
+          const selfEditingRequestedOut = ef.has(
+            `self-${newPlayer.user_id}-requested_cash_out`
+          )
+          const pendingEditingRequestedIn = ef.has(
+            `pending-${newPlayer.user_id}-requested_cash_in`
+          )
+          const pendingEditingRequestedOut = ef.has(
+            `pending-${newPlayer.user_id}-requested_cash_out`
+          )
+
           return {
             ...newPlayer,
             cash_in: hostEditingCashIn ? existing.cash_in : newPlayer.cash_in,
-            cash_out: hostEditingCashOut ? existing.cash_out : newPlayer.cash_out,
-            requested_cash_in: (selfEditingRequestedIn || pendingEditingRequestedIn) ? existing.requested_cash_in : newPlayer.requested_cash_in,
-            requested_cash_out: (selfEditingRequestedOut || pendingEditingRequestedOut) ? existing.requested_cash_out : newPlayer.requested_cash_out,
+            cash_out: hostEditingCashOut
+              ? existing.cash_out
+              : newPlayer.cash_out,
+            requested_cash_in:
+              selfEditingRequestedIn || pendingEditingRequestedIn
+                ? existing.requested_cash_in
+                : newPlayer.requested_cash_in,
+            requested_cash_out:
+              selfEditingRequestedOut || pendingEditingRequestedOut
+                ? existing.requested_cash_out
+                : newPlayer.requested_cash_out
           }
         })
       })
@@ -280,26 +375,37 @@ export function GameSession({
       .select("id, name, cash_in, cash_out")
       .eq("game_id", game.id)
     if (guestData) {
-      const newGuests = guestData.map((g: { id: string; name: string; cash_in: number; cash_out: number }) => ({
-        id: g.id,
-        name: g.name,
-        cash_in: g.cash_in,
-        cash_out: g.cash_out,
-      }))
-      
+      const newGuests = guestData.map(
+        (g: {
+          id: string
+          name: string
+          cash_in: number
+          cash_out: number
+        }) => ({
+          id: g.id,
+          name: g.name,
+          cash_in: g.cash_in,
+          cash_out: g.cash_out
+        })
+      )
+
       // Merge with existing guests to preserve editing state
-      setGuests(prevGuests => {
-        return newGuests.map(newGuest => {
-          const existing = prevGuests.find(g => g.id === newGuest.id)
+      setGuests((prevGuests) => {
+        return newGuests.map((newGuest) => {
+          const existing = prevGuests.find((g) => g.id === newGuest.id)
           if (!existing) return newGuest
-          
-          const editingCashIn = editingFieldsRef.current.has(`guest-${newGuest.id}-cash_in`)
-          const editingCashOut = editingFieldsRef.current.has(`guest-${newGuest.id}-cash_out`)
-          
+
+          const editingCashIn = editingFieldsRef.current.has(
+            `guest-${newGuest.id}-cash_in`
+          )
+          const editingCashOut = editingFieldsRef.current.has(
+            `guest-${newGuest.id}-cash_out`
+          )
+
           return {
             ...newGuest,
             cash_in: editingCashIn ? existing.cash_in : newGuest.cash_in,
-            cash_out: editingCashOut ? existing.cash_out : newGuest.cash_out,
+            cash_out: editingCashOut ? existing.cash_out : newGuest.cash_out
           }
         })
       })
@@ -354,20 +460,25 @@ export function GameSession({
   }, [game.id])
 
   const gameForPayout = useMemo((): GameSchema | null => {
-    const allGamePlayers = [...approved, ...guests.filter(g => g.cash_in !== null || g.cash_out !== null)]
+    const allGamePlayers = [
+      ...approved,
+      ...guests.filter((g) => g.cash_in !== null || g.cash_out !== null)
+    ]
     if (allGamePlayers.length < 2) return null
-    
+
     const names = new Set<string>()
     const makeName = (p: PlayerRow | GuestPlayer) => {
       let base: string
-      if ('venmo_handle' in p) {
+      if ("venmo_handle" in p) {
         // Regular player
-        base = p.venmo_handle ? `@${p.venmo_handle}` : p.display_name || `Player_${p.user_id.slice(0, 8)}`
+        base = p.venmo_handle
+          ? `@${p.venmo_handle}`
+          : p.display_name || `Player_${p.user_id.slice(0, 8)}`
       } else {
         // Guest player
         base = `${p.name} (guest)`
       }
-      
+
       let name = base
       let n = 0
       while (names.has(name)) {
@@ -376,7 +487,7 @@ export function GameSession({
       names.add(name)
       return name
     }
-    
+
     const players = [
       ...approved.map((p) => ({
         name: makeName(p),
@@ -384,21 +495,24 @@ export function GameSession({
         cashOut: p.cash_out ?? 0
       })),
       ...guests
-        .filter(g => g.cash_in !== null || g.cash_out !== null)
+        .filter((g) => g.cash_in !== null || g.cash_out !== null)
         .map((g) => ({
           name: makeName(g),
           cashIn: g.cash_in ?? 0,
           cashOut: g.cash_out ?? 0
         }))
     ]
-    
+
     return {
       description: game.description || undefined,
       players
     }
   }, [approved, guests, game.description])
 
-  const payout = useMemo(() => (gameForPayout ? calcPayouts(gameForPayout) : null), [gameForPayout])
+  const payout = useMemo(
+    () => (gameForPayout ? calcPayouts(gameForPayout) : null),
+    [gameForPayout]
+  )
 
   async function updatePlayerFields(
     gameId: string,
@@ -406,7 +520,11 @@ export function GameSession({
     patch: Partial<
       Pick<
         PlayerRow,
-        "cash_in" | "cash_out" | "requested_cash_in" | "requested_cash_out" | "status"
+        | "cash_in"
+        | "cash_out"
+        | "requested_cash_in"
+        | "requested_cash_out"
+        | "status"
       >
     >
   ) {
@@ -423,7 +541,12 @@ export function GameSession({
     setUpdating(null)
   }
 
-  async function updateCash(gameId: string, userId: string, cash_in: number | null, cash_out: number | null) {
+  async function updateCash(
+    gameId: string,
+    userId: string,
+    cash_in: number | null,
+    cash_out: number | null
+  ) {
     await updatePlayerFields(gameId, userId, {
       cash_in,
       cash_out,
@@ -444,7 +567,11 @@ export function GameSession({
     })
   }
 
-  async function setStatus(gameId: string, userId: string, status: "approved" | "denied") {
+  async function setStatus(
+    gameId: string,
+    userId: string,
+    status: "approved" | "denied"
+  ) {
     await updatePlayerFields(gameId, userId, { status })
   }
 
@@ -454,26 +581,28 @@ export function GameSession({
       const newStatus = isClosed ? "active" : "closed"
       await setGameStatus(game.id, newStatus)
       setGameStatus_(newStatus)
-      
+
       // When reopening: zero out all player amounts locally so the UI starts fresh
       if (newStatus === "active") {
-        setPlayers(prev =>
-          prev.map(p => ({
+        setPlayers((prev) =>
+          prev.map((p) => ({
             ...p,
             cash_in: 0,
             cash_out: 0,
             requested_cash_in: 0,
-            requested_cash_out: 0,
+            requested_cash_out: 0
           }))
         )
-        
+
         // Force a fresh fetch after a short delay to ensure server changes are applied
         setTimeout(() => {
           fetchAll()
         }, 500)
       }
-      
-      toast.success(isClosed ? "Session reopened" : "Session closed — edits are locked")
+
+      toast.success(
+        isClosed ? "Session reopened" : "Session closed — edits are locked"
+      )
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -482,29 +611,38 @@ export function GameSession({
   }
 
   async function handleEndGame() {
-    if (!payout || !gameForPayout || (approved.length + guests.filter(g => g.cash_in !== null || g.cash_out !== null).length) < 2) return
+    if (
+      !payout ||
+      !gameForPayout ||
+      approved.length +
+        guests.filter((g) => g.cash_in !== null || g.cash_out !== null).length <
+        2
+    )
+      return
     setEnding(true)
     const nameToUserId = new Map<string, string>()
-    
+
     // Map approved players to user IDs
     approved.forEach((player) => {
-      const playerName = gameForPayout.players.find(gp => {
-        const base = player.venmo_handle ? `@${player.venmo_handle}` : player.display_name || `Player_${player.user_id.slice(0, 8)}`
-        return gp.name === base || gp.name.startsWith(base + '_')
+      const playerName = gameForPayout.players.find((gp) => {
+        const base = player.venmo_handle
+          ? `@${player.venmo_handle}`
+          : player.display_name || `Player_${player.user_id.slice(0, 8)}`
+        return gp.name === base || gp.name.startsWith(base + "_")
       })?.name
       if (playerName) {
         nameToUserId.set(playerName, player.user_id)
       }
     })
-    
+
     // Create profit deltas only for players with user IDs (excluding guests)
     const profit_deltas = payout.players
-      .filter(pl => nameToUserId.has(pl.name)) // Only include players with user IDs
+      .filter((pl) => nameToUserId.has(pl.name)) // Only include players with user IDs
       .map((pl) => ({
         user_id: nameToUserId.get(pl.name)!,
         profit_delta: pl.net
       }))
-    
+
     // Note: We don't validate that all payout players have user IDs since guests won't have them
     const supabase = createClient()
     const { error } = await supabase.rpc("end_game", {
@@ -523,6 +661,8 @@ export function GameSession({
 
   function copyGameLink() {
     navigator.clipboard.writeText(inviteUrl)
+    setCopyFeedback("Invite link copied")
+    window.setTimeout(() => setCopyFeedback(""), 2000)
     toast.success("Link copied")
   }
 
@@ -546,7 +686,8 @@ export function GameSession({
           <div>
             <CardTitle>{game.description || "Game"}</CardTitle>
             <CardDescription>
-              Game ID: <span className="font-mono">{game.short_code}</span> — share so others can join
+              Game ID: <span className="font-mono">{game.short_code}</span> —
+              share so others can join
               <br />
               Invite link:{" "}
               <span className="font-mono break-all">{inviteUrl}</span>
@@ -576,13 +717,18 @@ export function GameSession({
             </Button>
           </div>
         </CardHeader>
+        <div className="sr-only" aria-live="polite">
+          {copyFeedback}
+        </div>
       </Card>
 
       {pending.length > 0 && isHost && (
         <Card>
           <CardHeader>
             <CardTitle>Pending approval</CardTitle>
-            <CardDescription>Approve or deny players to join the game</CardDescription>
+            <CardDescription>
+              Approve or deny players to join the game
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {pending.map((p) => (
@@ -593,13 +739,15 @@ export function GameSession({
                 <div className="flex flex-col gap-1">
                   <span>{p.display_name || p.user_id.slice(0, 8)}</span>
                   <span className="text-xs text-muted-foreground">
-                    Requested in: {p.requested_cash_in ?? 0} / out: {p.requested_cash_out ?? 0}
+                    Requested in: {p.requested_cash_in ?? 0} / out:{" "}
+                    {p.requested_cash_out ?? 0}
                   </span>
                 </div>
                 <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant="default"
+                    aria-label={`Approve ${playerName(p)}`}
                     disabled={updating === p.user_id}
                     onClick={() =>
                       updatePlayerFields(game.id, p.user_id, {
@@ -611,12 +759,17 @@ export function GameSession({
                       })
                     }
                   >
-                    {updating === p.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    {updating === p.user_id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
                     Approve
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
+                    aria-label={`Deny ${playerName(p)}`}
                     disabled={updating === p.user_id}
                     onClick={() => setStatus(game.id, p.user_id, "denied")}
                   >
@@ -640,7 +793,10 @@ export function GameSession({
           </CardDescription>
         </CardHeader>
         {isClosed && (
-          <div className="mx-6 mb-2 flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-500">
+          <div
+            className="mx-6 mb-2 flex items-center gap-2 rounded-md border border-yellow-600/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-700 dark:text-yellow-300"
+            role="status"
+          >
             <Lock className="h-4 w-4 shrink-0" />
             Session closed — all edits are locked until the host reopens it.
           </div>
@@ -650,28 +806,37 @@ export function GameSession({
             {players.map((p) => (
               <div
                 key={p.user_id}
+                role="group"
+                aria-label={`${playerName(p)} ${p.status} player`}
                 className="flex flex-wrap items-center gap-2 rounded border p-2"
               >
                 {/* Player name: host can click approved players to open action modal */}
                 <span className="font-medium">
-                  {isHost && p.status === "approved" && p.user_id !== currentUserId ? (
+                  {isHost &&
+                  p.status === "approved" &&
+                  p.user_id !== currentUserId ? (
                     <button
-                      className="cursor-pointer text-left underline underline-offset-2 decoration-white"
+                      className="cursor-pointer rounded-sm text-left underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Open actions for ${playerName(p)}`}
                       onClick={() => {
                         setSelectedPlayer(p)
                         setTransferConfirm(false)
                       }}
                     >
-                      {p.display_name || p.user_id.slice(0, 8)}
+                      {playerName(p)}
                     </button>
                   ) : (
-                    p.display_name || p.user_id.slice(0, 8)
+                    playerName(p)
                   )}
                   {p.status === "pending" && (
-                    <span className="text-muted-foreground ml-1 text-sm">(pending)</span>
+                    <span className="text-muted-foreground ml-1 text-sm">
+                      (pending)
+                    </span>
                   )}
                   {p.status === "denied" && (
-                    <span className="text-muted-foreground ml-1 text-sm">(denied)</span>
+                    <span className="text-muted-foreground ml-1 text-sm">
+                      (denied)
+                    </span>
                   )}
                 </span>
                 {p.status === "approved" && (
@@ -683,118 +848,152 @@ export function GameSession({
                           <Input
                             className="w-24"
                             placeholder="In"
-                            value={p.cash_in === null || p.cash_in === undefined ? "" : p.cash_in.toString()}
-                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_in`, true)}
+                            aria-label={`Cash in for ${playerName(p)}`}
+                            inputMode="decimal"
+                            value={
+                              p.cash_in === null || p.cash_in === undefined
+                                ? ""
+                                : p.cash_in.toString()
+                            }
+                            onFocus={() =>
+                              setFieldEditing(`host-${p.user_id}-cash_in`, true)
+                            }
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
                                 prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, cash_in: v } : x
+                                  x.user_id === p.user_id
+                                    ? { ...x, cash_in: v }
+                                    : x
                                 )
                               )
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
-                              setFieldEditing(`host-${p.user_id}-cash_in`, false)
+                              setFieldEditing(
+                                `host-${p.user_id}-cash_in`,
+                                false
+                              )
                               updateCash(game.id, p.user_id, v, p.cash_out)
                             }}
                           />
                           <Input
                             className="w-24"
                             placeholder="Out"
-                            value={p.cash_out === null || p.cash_out === undefined ? "" : p.cash_out.toString()}
-                            onFocus={() => setFieldEditing(`host-${p.user_id}-cash_out`, true)}
+                            aria-label={`Cash out for ${playerName(p)}`}
+                            inputMode="decimal"
+                            value={
+                              p.cash_out === null || p.cash_out === undefined
+                                ? ""
+                                : p.cash_out.toString()
+                            }
+                            onFocus={() =>
+                              setFieldEditing(
+                                `host-${p.user_id}-cash_out`,
+                                true
+                              )
+                            }
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
                                 prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, cash_out: v } : x
+                                  x.user_id === p.user_id
+                                    ? { ...x, cash_out: v }
+                                    : x
                                 )
                               )
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
-                              setFieldEditing(`host-${p.user_id}-cash_out`, false)
+                              setFieldEditing(
+                                `host-${p.user_id}-cash_out`,
+                                false
+                              )
                               updateCash(game.id, p.user_id, p.cash_in, v)
                             }}
                           />
                         </div>
-                        {!isClosed && (p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out) && (
-                          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                            {p.requested_cash_in !== p.cash_in && (
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="flex-1">
-                                  Requested in: {p.requested_cash_in ?? 0} (current {p.cash_in ?? 0})
-                                </span>
-                                <div className="flex gap-1 shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        cash_in: p.requested_cash_in,
-                                        requested_cash_in: p.requested_cash_in
-                                      })
-                                    }
-                                  >
-                                    <Check className="mr-1 h-3 w-3" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        requested_cash_in: p.cash_in
-                                      })
-                                    }
-                                  >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Deny
-                                  </Button>
+                        {!isClosed &&
+                          (p.requested_cash_in !== p.cash_in ||
+                            p.requested_cash_out !== p.cash_out) && (
+                            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                              {p.requested_cash_in !== p.cash_in && (
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="flex-1">
+                                    Requested in: {p.requested_cash_in ?? 0}{" "}
+                                    (current {p.cash_in ?? 0})
+                                  </span>
+                                  <div className="flex gap-1 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={updating === p.user_id}
+                                      onClick={() =>
+                                        updatePlayerFields(game.id, p.user_id, {
+                                          cash_in: p.requested_cash_in,
+                                          requested_cash_in: p.requested_cash_in
+                                        })
+                                      }
+                                    >
+                                      <Check className="mr-1 h-3 w-3" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={updating === p.user_id}
+                                      onClick={() =>
+                                        updatePlayerFields(game.id, p.user_id, {
+                                          requested_cash_in: p.cash_in
+                                        })
+                                      }
+                                    >
+                                      <X className="mr-1 h-3 w-3" />
+                                      Deny
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {p.requested_cash_out !== p.cash_out && (
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="flex-1">
-                                  Requested out: {p.requested_cash_out ?? 0} (current {p.cash_out ?? 0})
-                                </span>
-                                <div className="flex gap-1 shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        cash_out: p.requested_cash_out,
-                                        requested_cash_out: p.requested_cash_out
-                                      })
-                                    }
-                                  >
-                                    <Check className="mr-1 h-3 w-3" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={updating === p.user_id}
-                                    onClick={() =>
-                                      updatePlayerFields(game.id, p.user_id, {
-                                        requested_cash_out: p.cash_out
-                                      })
-                                    }
-                                  >
-                                    <X className="mr-1 h-3 w-3" />
-                                    Deny
-                                  </Button>
+                              )}
+                              {p.requested_cash_out !== p.cash_out && (
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="flex-1">
+                                    Requested out: {p.requested_cash_out ?? 0}{" "}
+                                    (current {p.cash_out ?? 0})
+                                  </span>
+                                  <div className="flex gap-1 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={updating === p.user_id}
+                                      onClick={() =>
+                                        updatePlayerFields(game.id, p.user_id, {
+                                          cash_out: p.requested_cash_out,
+                                          requested_cash_out:
+                                            p.requested_cash_out
+                                        })
+                                      }
+                                    >
+                                      <Check className="mr-1 h-3 w-3" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={updating === p.user_id}
+                                      onClick={() =>
+                                        updatePlayerFields(game.id, p.user_id, {
+                                          requested_cash_out: p.cash_out
+                                        })
+                                      }
+                                    >
+                                      <X className="mr-1 h-3 w-3" />
+                                      Deny
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              )}
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -805,45 +1004,91 @@ export function GameSession({
                           <Input
                             className="w-24"
                             placeholder="In"
-                            value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
-                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_in`, true)}
+                            aria-label={`Requested cash in for ${playerName(p)}`}
+                            inputMode="decimal"
+                            value={
+                              p.requested_cash_in === null ||
+                              p.requested_cash_in === undefined
+                                ? ""
+                                : p.requested_cash_in.toString()
+                            }
+                            onFocus={() =>
+                              setFieldEditing(
+                                `self-${p.user_id}-requested_cash_in`,
+                                true
+                              )
+                            }
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
                                 prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x
+                                  x.user_id === p.user_id
+                                    ? { ...x, requested_cash_in: v }
+                                    : x
                                 )
                               )
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
-                              setFieldEditing(`self-${p.user_id}-requested_cash_in`, false)
-                              updateRequestedCash(game.id, p.user_id, v, p.requested_cash_out)
+                              setFieldEditing(
+                                `self-${p.user_id}-requested_cash_in`,
+                                false
+                              )
+                              updateRequestedCash(
+                                game.id,
+                                p.user_id,
+                                v,
+                                p.requested_cash_out
+                              )
                             }}
                           />
                           <Input
                             className="w-24"
                             placeholder="Out"
-                            value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
-                            onFocus={() => setFieldEditing(`self-${p.user_id}-requested_cash_out`, true)}
+                            aria-label={`Requested cash out for ${playerName(p)}`}
+                            inputMode="decimal"
+                            value={
+                              p.requested_cash_out === null ||
+                              p.requested_cash_out === undefined
+                                ? ""
+                                : p.requested_cash_out.toString()
+                            }
+                            onFocus={() =>
+                              setFieldEditing(
+                                `self-${p.user_id}-requested_cash_out`,
+                                true
+                              )
+                            }
                             onChange={(e) => {
                               const v = parseCashInput(e.target.value)
                               setPlayers((prev) =>
                                 prev.map((x) =>
-                                  x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x
+                                  x.user_id === p.user_id
+                                    ? { ...x, requested_cash_out: v }
+                                    : x
                                 )
                               )
                             }}
                             onBlur={(e) => {
                               const v = parseCashInput(e.target.value)
-                              setFieldEditing(`self-${p.user_id}-requested_cash_out`, false)
-                              updateRequestedCash(game.id, p.user_id, p.requested_cash_in, v)
+                              setFieldEditing(
+                                `self-${p.user_id}-requested_cash_out`,
+                                false
+                              )
+                              updateRequestedCash(
+                                game.id,
+                                p.user_id,
+                                p.requested_cash_in,
+                                v
+                              )
                             }}
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Current approved: In {p.cash_in ?? 0} / Out {p.cash_out ?? 0}
-                          {(p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out) &&
+                          Current approved: In {p.cash_in ?? 0} / Out{" "}
+                          {p.cash_out ?? 0}
+                          {(p.requested_cash_in !== p.cash_in ||
+                            p.requested_cash_out !== p.cash_out) &&
                             " — awaiting host approval"}
                         </span>
                       </div>
@@ -864,112 +1109,178 @@ export function GameSession({
                     )}
                   </>
                 )}
-                {p.status === "pending" && !isHost && p.user_id === currentUserId && !isClosed && (
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Input
-                        className="w-24"
-                        placeholder="Requested in"
-                        value={p.requested_cash_in === null || p.requested_cash_in === undefined ? "" : p.requested_cash_in.toString()}
-                        onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_in`, true)}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
-                          setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, requested_cash_in: v } : x
+                {p.status === "pending" &&
+                  !isHost &&
+                  p.user_id === currentUserId &&
+                  !isClosed && (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          className="w-24"
+                          placeholder="Requested in"
+                          aria-label={`Requested cash in for ${playerName(p)}`}
+                          inputMode="decimal"
+                          value={
+                            p.requested_cash_in === null ||
+                            p.requested_cash_in === undefined
+                              ? ""
+                              : p.requested_cash_in.toString()
+                          }
+                          onFocus={() =>
+                            setFieldEditing(
+                              `pending-${p.user_id}-requested_cash_in`,
+                              true
                             )
-                          )
-                        }}
-                        onBlur={(e) => {
-                          const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
-                          setFieldEditing(`pending-${p.user_id}-requested_cash_in`, false)
-                          updateRequestedAmounts(game.id, v ?? 0, p.requested_cash_out ?? 0).catch(() =>
-                            toast.error("Failed to save")
-                          )
-                        }}
-                      />
-                      <Input
-                        className="w-24"
-                        placeholder="Requested out"
-                        value={p.requested_cash_out === null || p.requested_cash_out === undefined ? "" : p.requested_cash_out.toString()}
-                        onFocus={() => setFieldEditing(`pending-${p.user_id}-requested_cash_out`, true)}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
-                          setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, requested_cash_out: v } : x
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? null
+                                : parseFloat(e.target.value) || null
+                            setPlayers((prev) =>
+                              prev.map((x) =>
+                                x.user_id === p.user_id
+                                  ? { ...x, requested_cash_in: v }
+                                  : x
+                              )
                             )
-                          )
-                        }}
-                        onBlur={(e) => {
-                          const v = e.target.value === "" ? null : parseFloat(e.target.value) || null
-                          setFieldEditing(`pending-${p.user_id}-requested_cash_out`, false)
-                          updateRequestedAmounts(game.id, p.requested_cash_in ?? 0, v ?? 0).catch(() =>
-                            toast.error("Failed to save")
-                          )
-                        }}
-                      />
+                          }}
+                          onBlur={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? null
+                                : parseFloat(e.target.value) || null
+                            setFieldEditing(
+                              `pending-${p.user_id}-requested_cash_in`,
+                              false
+                            )
+                            updateRequestedAmounts(
+                              game.id,
+                              v ?? 0,
+                              p.requested_cash_out ?? 0
+                            ).catch(() => toast.error("Failed to save"))
+                          }}
+                        />
+                        <Input
+                          className="w-24"
+                          placeholder="Requested out"
+                          aria-label={`Requested cash out for ${playerName(p)}`}
+                          inputMode="decimal"
+                          value={
+                            p.requested_cash_out === null ||
+                            p.requested_cash_out === undefined
+                              ? ""
+                              : p.requested_cash_out.toString()
+                          }
+                          onFocus={() =>
+                            setFieldEditing(
+                              `pending-${p.user_id}-requested_cash_out`,
+                              true
+                            )
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? null
+                                : parseFloat(e.target.value) || null
+                            setPlayers((prev) =>
+                              prev.map((x) =>
+                                x.user_id === p.user_id
+                                  ? { ...x, requested_cash_out: v }
+                                  : x
+                              )
+                            )
+                          }}
+                          onBlur={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? null
+                                : parseFloat(e.target.value) || null
+                            setFieldEditing(
+                              `pending-${p.user_id}-requested_cash_out`,
+                              false
+                            )
+                            updateRequestedAmounts(
+                              game.id,
+                              p.requested_cash_in ?? 0,
+                              v ?? 0
+                            ).catch(() => toast.error("Failed to save"))
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Waiting for host to approve your join request and
+                        amounts.
+                      </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      Waiting for host to approve your join request and amounts.
-                    </span>
-                  </div>
-                )}
+                  )}
                 {/* Denied self: offer to request rejoin */}
-                {!isHost && p.user_id === currentUserId && p.status === "denied" && (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-red-400">
-                      You were removed from this table.
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={updating === p.user_id}
-                      onClick={async () => {
-                        setUpdating(p.user_id)
-                        try {
-                          await requestRejoin(game.id)
-                          // Optimistically flip to pending in local state
-                          setPlayers((prev) =>
-                            prev.map((x) =>
-                              x.user_id === p.user_id ? { ...x, status: "pending" } : x
+                {!isHost &&
+                  p.user_id === currentUserId &&
+                  p.status === "denied" && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-destructive text-xs">
+                        You were removed from this table.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={updating === p.user_id}
+                        onClick={async () => {
+                          setUpdating(p.user_id)
+                          try {
+                            await requestRejoin(game.id)
+                            // Optimistically flip to pending in local state
+                            setPlayers((prev) =>
+                              prev.map((x) =>
+                                x.user_id === p.user_id
+                                  ? { ...x, status: "pending" }
+                                  : x
+                              )
                             )
-                          )
-                          toast.success("Rejoin request sent — waiting for host approval")
-                        } catch {
-                          toast.error("Failed to send rejoin request")
-                        } finally {
-                          setUpdating(null)
-                        }
-                      }}
-                    >
-                      {updating === p.user_id
-                        ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        : null}
-                      Request to Rejoin
-                    </Button>
-                  </div>
-                )}
+                            toast.success(
+                              "Rejoin request sent — waiting for host approval"
+                            )
+                          } catch {
+                            toast.error("Failed to send rejoin request")
+                          } finally {
+                            setUpdating(null)
+                          }
+                        }}
+                      >
+                        {updating === p.user_id ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : null}
+                        Request to Rejoin
+                      </Button>
+                    </div>
+                  )}
 
                 {/* Action button — host only, not on self */}
                 {isHost && p.user_id !== currentUserId && (
                   <button
-                    className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
+                    className={`ml-auto flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 ${
                       p.status === "denied"
                         ? "text-muted-foreground hover:bg-green-500/10 hover:text-green-500"
                         : "text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                     }`}
-                    title={p.status === "denied" ? "Approve player" : "Remove player"}
+                    aria-label={
+                      p.status === "denied"
+                        ? `Approve ${playerName(p)}`
+                        : `Remove ${playerName(p)}`
+                    }
                     disabled={kicking === p.user_id || updating === p.user_id}
                     onClick={() => {
                       if (p.status === "denied") {
-                        updatePlayerFields(game.id, p.user_id, { status: "approved" })
+                        updatePlayerFields(game.id, p.user_id, {
+                          status: "approved"
+                        })
                       } else {
                         handleKick(p.user_id)
                       }
                     }}
                   >
-                    {(kicking === p.user_id || updating === p.user_id) ? (
+                    {kicking === p.user_id || updating === p.user_id ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : p.status === "denied" ? (
                       <Check className="h-3.5 w-3.5" />
@@ -980,27 +1291,43 @@ export function GameSession({
                 )}
               </div>
             ))}
-            
+
             {/* Guest section — visible to everyone, editable by host */}
             {guests.map((guest) => (
               <div
                 key={guest.id}
+                role="group"
+                aria-label={`${guest.name} guest player`}
                 className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 rounded border p-3"
               >
                 <span className="font-medium flex-shrink-0">
                   {guest.name}
-                  <span className="text-muted-foreground ml-1 text-sm">(guest)</span>
+                  <span className="text-muted-foreground ml-1 text-sm">
+                    (guest)
+                  </span>
                 </span>
                 {isHost ? (
                   <div className="flex items-center gap-2 sm:flex-1">
                     <Input
                       className="flex-1 sm:w-24 sm:flex-initial"
                       placeholder="In"
-                      value={guest.cash_in === null || guest.cash_in === undefined ? "" : guest.cash_in.toString()}
-                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_in`, true)}
+                      aria-label={`Cash in for guest ${guest.name}`}
+                      inputMode="decimal"
+                      value={
+                        guest.cash_in === null || guest.cash_in === undefined
+                          ? ""
+                          : guest.cash_in.toString()
+                      }
+                      onFocus={() =>
+                        setFieldEditing(`guest-${guest.id}-cash_in`, true)
+                      }
                       onChange={(e) => {
                         const v = parseCashInput(e.target.value)
-                        setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_in: v } : g)))
+                        setGuests((prev) =>
+                          prev.map((g) =>
+                            g.id === guest.id ? { ...g, cash_in: v } : g
+                          )
+                        )
                       }}
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
@@ -1012,11 +1339,23 @@ export function GameSession({
                     <Input
                       className="flex-1 sm:w-24 sm:flex-initial"
                       placeholder="Out"
-                      value={guest.cash_out === null || guest.cash_out === undefined ? "" : guest.cash_out.toString()}
-                      onFocus={() => setFieldEditing(`guest-${guest.id}-cash_out`, true)}
+                      aria-label={`Cash out for guest ${guest.name}`}
+                      inputMode="decimal"
+                      value={
+                        guest.cash_out === null || guest.cash_out === undefined
+                          ? ""
+                          : guest.cash_out.toString()
+                      }
+                      onFocus={() =>
+                        setFieldEditing(`guest-${guest.id}-cash_out`, true)
+                      }
                       onChange={(e) => {
                         const v = parseCashInput(e.target.value)
-                        setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, cash_out: v } : g)))
+                        setGuests((prev) =>
+                          prev.map((g) =>
+                            g.id === guest.id ? { ...g, cash_out: v } : g
+                          )
+                        )
                       }}
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
@@ -1026,8 +1365,8 @@ export function GameSession({
                       disabled={isClosed}
                     />
                     <button
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                      title="Remove guest"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Remove guest ${guest.name}`}
                       onClick={() => removeGuest(guest.id)}
                     >
                       <X className="h-3.5 w-3.5" />
@@ -1047,6 +1386,7 @@ export function GameSession({
                 <Input
                   className="flex-1 sm:flex-initial sm:w-32 min-w-0"
                   placeholder="Guest name"
+                  aria-label="Guest name"
                   value={guestForm.name}
                   onChange={(e) => handleGuestNameChange(e.target.value)}
                   onBlur={handleGuestNameBlur}
@@ -1055,14 +1395,28 @@ export function GameSession({
                   <Input
                     className="flex-1 sm:w-24"
                     placeholder="In"
+                    aria-label="Cash in for new guest"
+                    inputMode="decimal"
                     value={guestForm.cash_in}
-                    onChange={(e) => setGuestForm((prev) => ({ ...prev, cash_in: e.target.value }))}
+                    onChange={(e) =>
+                      setGuestForm((prev) => ({
+                        ...prev,
+                        cash_in: e.target.value
+                      }))
+                    }
                   />
                   <Input
                     className="flex-1 sm:w-24"
                     placeholder="Out"
+                    aria-label="Cash out for new guest"
+                    inputMode="decimal"
                     value={guestForm.cash_out}
-                    onChange={(e) => setGuestForm((prev) => ({ ...prev, cash_out: e.target.value }))}
+                    onChange={(e) =>
+                      setGuestForm((prev) => ({
+                        ...prev,
+                        cash_out: e.target.value
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -1080,7 +1434,10 @@ export function GameSession({
 
       {isHost && (
         <div className="flex justify-end gap-2">
-          {(approved.length + guests.filter(g => g.cash_in !== null || g.cash_out !== null).length) >= 2 && (
+          {approved.length +
+            guests.filter((g) => g.cash_in !== null || g.cash_out !== null)
+              .length >=
+            2 && (
             <Button
               onClick={handleEndGame}
               disabled={ending}
@@ -1093,95 +1450,100 @@ export function GameSession({
         </div>
       )}
 
-      {/* Transfer Host Modal */}
-      {selectedPlayer && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedPlayer(null)
-              setTransferConfirm(false)
-            }
-          }}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <Dialog
+        open={!!selectedPlayer}
+        onOpenChange={(open) => {
+          if (!open && !transferring) {
+            setSelectedPlayer(null)
+            setTransferConfirm(false)
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          {selectedPlayer && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-yellow-500" />
+                  Player Actions
+                </DialogTitle>
+                <DialogDescription>
+                  {playerName(selectedPlayer)}
+                </DialogDescription>
+              </DialogHeader>
 
-          {/* Modal */}
-          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border bg-background shadow-2xl p-6 space-y-5">
-            {/* Header */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-lg font-semibold">
-                <Crown className="h-5 w-5 text-yellow-500" />
-                Player Actions
-              </div>
-              <p className="text-muted-foreground text-sm">
-                {selectedPlayer.display_name || selectedPlayer.venmo_handle || selectedPlayer.user_id.slice(0, 8)}
-              </p>
-            </div>
-
-            {/* Transfer Host section */}
-            <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
-              <div className="flex items-center gap-2 font-medium text-sm">
-                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                Transfer Host
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This player will become the new host and gain full control of the game.
-                You will become a regular player.
-              </p>
-              {!transferConfirm ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setTransferConfirm(true)}
-                >
-                  Make Host
-                </Button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-yellow-400 font-medium">
-                    Are you sure? This cannot be undone without the new host&apos;s consent.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="flex-1"
-                      disabled={transferring}
-                      onClick={() => handleTransferHost(selectedPlayer.user_id)}
-                    >
-                      {transferring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                      Confirm Transfer
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setTransferConfirm(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+              <div className="rounded-md border bg-muted/40 p-4 space-y-3">
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                  Transfer Host
                 </div>
-              )}
-            </div>
+                <p className="text-xs text-muted-foreground">
+                  This player will become the new host and gain full control of
+                  the game. You will become a regular player.
+                </p>
+                {!transferConfirm ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    aria-label={`Make ${playerName(selectedPlayer)} host`}
+                    onClick={() => setTransferConfirm(true)}
+                  >
+                    Make Host
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <p
+                      className="text-xs text-yellow-700 font-medium dark:text-yellow-300"
+                      role="alert"
+                    >
+                      Are you sure? This cannot be undone without the new
+                      host&apos;s consent.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={transferring}
+                        aria-label={`Confirm transfer host to ${playerName(selectedPlayer)}`}
+                        onClick={() =>
+                          handleTransferHost(selectedPlayer.user_id)
+                        }
+                      >
+                        {transferring ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : null}
+                        Confirm Transfer
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setTransferConfirm(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Close */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-zinc-500"
-              onClick={() => {
-                setSelectedPlayer(null)
-                setTransferConfirm(false)
-              }}
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
+              {/* Close */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={() => {
+                  setSelectedPlayer(null)
+                  setTransferConfirm(false)
+                }}
+              >
+                Close
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

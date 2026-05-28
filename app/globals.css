@@ -124,6 +124,10 @@
     @apply bg-background text-foreground;
   }
 
+  .skip-link {
+    @apply bg-background text-foreground border-border fixed left-4 top-4 z-[100] -translate-y-16 rounded-md border px-3 py-2 text-sm font-medium shadow-md transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
   :root {
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);

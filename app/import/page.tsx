@@ -276,14 +276,16 @@ function ImportPageContent() {
 
 export default function ImportPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex w-full flex-col items-center justify-center">
-          <Skeleton className="h-96 w-full max-w-prose" />
-        </div>
-      }
-    >
-      <ImportPageContent />
-    </Suspense>
+    <main id="main-content" tabIndex={-1}>
+      <Suspense
+        fallback={
+          <div className="flex w-full flex-col items-center justify-center">
+            <Skeleton className="h-96 w-full max-w-prose" />
+          </div>
+        }
+      >
+        <ImportPageContent />
+      </Suspense>
+    </main>
   )
 }

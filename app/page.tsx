@@ -1,7 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 
 export const metadata: Metadata = {
   title: "ChipCount",
@@ -10,13 +16,17 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-[80vh] flex-col items-center justify-center">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-[80vh] flex-col items-center justify-center"
+    >
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">ChipCount</CardTitle>
           <CardDescription>
-            Track poker games, calculate payouts, and see who&apos;s up over time.
-            Log in to start or join a game.
+            Track poker games, calculate payouts, and see who&apos;s up over
+            time. Log in to start or join a game.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -27,6 +37,6 @@ export default function LandingPage() {
           </Link>
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }
