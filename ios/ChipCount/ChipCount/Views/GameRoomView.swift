@@ -366,7 +366,10 @@ struct GameRoomView: View {
         cashOut: guestCashOut
       )
       // Optimistically update
-      snapshot.guests.append(newGuest)
+      if var current = snapshot {
+        current.guests.append(newGuest)
+        snapshot = current
+      }
       guestName = ""
       guestCashIn = 0
       guestCashOut = 0
