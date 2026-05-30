@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AUTH_CALLBACK_SCHEME</key>
+	<string>chipcount</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.pranavbalaji.ChipCount.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chipcount</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>NEXT_PUBLIC_SUPABASE_ANON_KEY</key>
+	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXJ3b2J1eGFtcnhhc2Fwd3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDM0MjksImV4cCI6MjA4NzExOTQyOX0.JnJBIq7ohfWX5O5KUbLVlnTHOTJ-segSlNZOz9vlPZ4</string>
+	<key>SUPABASE_URL</key>
+	<string>https://yburwobuxamrxasapwyo.supabase.co</string>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>WEB_BASE_URL</key>
+	<string>http://localhost:3000</string>
+</dict>
+</plist>
