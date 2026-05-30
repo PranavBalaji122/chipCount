@@ -359,16 +359,20 @@ struct GameRoomView: View {
 
   private func addGuest() async {
     do {
-      try await service.addGuest(
+      let newGuest = try await service.addGuest(
         gameId: gameId,
         name: guestName,
         cashIn: guestCashIn,
         cashOut: guestCashOut
       )
+      // Optimistically update
+      snapshot.guests.append(newGuest)
       guestName = ""
       guestCashIn = 0
       guestCashOut = 0
-      await load()
+      // We still call load in the background if we want, or rely on realtime
+      // But let's just let realtime handle it or do it silently.
+      // Doing it right here avoids the "disappearing" glitch if load() fetches stale data.
     } catch {
       errorMessage = error.localizedDescription
     }
