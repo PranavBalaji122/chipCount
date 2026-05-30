@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Play, LogIn } from "lucide-react"
+import { Loader2, Play, LogIn, UserPlus, X } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
+
+type GuestEntry = { id: string; name: string }
 
 export function DashboardActions() {
   const router = useRouter()
@@ -26,6 +28,28 @@ export function DashboardActions() {
   const [startLoading, setStartLoading] = useState(false)
   const [gameName, setGameName] = useState("")
   const [showNameInput, setShowNameInput] = useState(false)
+
+  // Guest state for the "New Table" dialog
+  const [guests, setGuests] = useState<GuestEntry[]>([])
+  const [guestInput, setGuestInput] = useState("")
+
+  function addGuestFromInput() {
+    const name = guestInput.trim()
+    if (!name) return
+    const alreadyExists = guests.some(
+      (g) => g.name.toLowerCase() === name.toLowerCase()
+    )
+    if (alreadyExists) return
+    setGuests((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name }
+    ])
+    setGuestInput("")
+  }
+
+  function removeGuest(id: string) {
+    setGuests((prev) => prev.filter((g) => g.id !== id))
+  }
 
   async function ensureProfile(
     supabase: ReturnType<typeof createClient>,
@@ -83,6 +107,25 @@ export function DashboardActions() {
           status: "approved"
         })
       if (playerError) throw playerError
+
+      // Insert any pre-added guests
+      if (guests.length > 0) {
+        const { error: guestError } = await supabase
+          .from("game_guests")
+          .insert(
+            guests.map((g) => ({
+              game_id: game.id,
+              name: g.name,
+              cash_in: 0,
+              cash_out: 0
+            }))
+          )
+        if (guestError) {
+          console.error("Failed to add guests:", guestError)
+          // Non-fatal: still navigate to the game
+        }
+      }
+
       router.push(`/game/${game.id}`)
       router.refresh()
     } catch (e) {
@@ -158,6 +201,8 @@ export function DashboardActions() {
           if (!open && !startLoading) {
             setShowNameInput(false)
             setGameName("")
+            setGuests([])
+            setGuestInput("")
             setStartError(null)
           } else {
             setShowNameInput(open)
@@ -168,7 +213,7 @@ export function DashboardActions() {
           <DialogHeader>
             <DialogTitle>New Table</DialogTitle>
             <DialogDescription>
-              Give your table a name so players know what they&apos;re joining.
+              Give your table a name and optionally add guests before starting.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleStartGame} className="space-y-4">
@@ -189,6 +234,64 @@ export function DashboardActions() {
                 className="bg-muted/50"
               />
             </div>
+
+            {/* Guest section */}
+            <div className="space-y-2">
+              <Label htmlFor="guest-input">
+                Guests{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="guest-input"
+                  placeholder="Guest name"
+                  value={guestInput}
+                  onChange={(e) => setGuestInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      addGuestFromInput()
+                    }
+                  }}
+                  disabled={startLoading}
+                  className="bg-muted/50"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Add guest"
+                  onClick={addGuestFromInput}
+                  disabled={startLoading || !guestInput.trim()}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </div>
+              {guests.length > 0 && (
+                <ul className="space-y-1">
+                  {guests.map((g) => (
+                    <li
+                      key={g.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm"
+                    >
+                      <span>{g.name}</span>
+                      <button
+                        type="button"
+                        aria-label={`Remove guest ${g.name}`}
+                        onClick={() => removeGuest(g.id)}
+                        disabled={startLoading}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             {startError && (
               <p className="text-destructive text-sm" role="alert">
                 {startError}
@@ -210,6 +313,8 @@ export function DashboardActions() {
                 onClick={() => {
                   setShowNameInput(false)
                   setGameName("")
+                  setGuests([])
+                  setGuestInput("")
                   setStartError(null)
                 }}
               >
