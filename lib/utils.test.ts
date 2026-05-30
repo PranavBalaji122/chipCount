@@ -18,6 +18,7 @@ describe("calcPayouts", () => {
       players: [
         {
           name: "Bob",
+          displayName: "Bob",
           cashIn: 100,
           cashOut: 0,
           net: -100,
@@ -26,6 +27,7 @@ describe("calcPayouts", () => {
         },
         {
           name: "Alice",
+          displayName: "Alice",
           cashIn: 100,
           cashOut: 200,
           net: 100,
@@ -105,6 +107,7 @@ describe("calcPayouts", () => {
       players: [
         {
           name: "Alice",
+          displayName: "Alice",
           cashIn: 100,
           cashOut: 150,
           net: 50,
@@ -113,6 +116,7 @@ describe("calcPayouts", () => {
         },
         {
           name: "Bob",
+          displayName: "Bob",
           cashIn: 100,
           cashOut: 100,
           net: 0,
@@ -121,6 +125,7 @@ describe("calcPayouts", () => {
         },
         {
           name: "Charlie",
+          displayName: "Charlie",
           cashIn: 100,
           cashOut: 50,
           net: -50,

@@ -11,6 +11,7 @@ import {
   updateRequestedAmounts
 } from "@/lib/actions"
 import { calcPayouts } from "@/lib/utils"
+import { parseCashInput, toGuestAmountPatch } from "@/lib/guest-amounts"
 import type { GameSchema } from "@/lib/schemas"
 import {
   Card,
@@ -67,19 +68,10 @@ type GuestPlayer = {
   cash_out: number | null
 }
 
-// Helper function to parse cash input values, handling "zero" conversion
-function parseCashInput(value: string): number | null {
-  if (value === "") return null
-  if (value.toLowerCase() === "zero") return 0
-  const parsed = parseFloat(value)
-  return isNaN(parsed) ? null : parsed
-}
-
 export function GameSession({
   game,
   initialPlayers,
   currentUserId,
-  isHost: _initialIsHost,
   baseUrl
 }: {
   game: Game
@@ -215,20 +207,35 @@ export function GameSession({
     guestId: string,
     updates: Partial<Pick<GuestPlayer, "cash_in" | "cash_out">>
   ) {
+    if (isClosed) return
     setGuests((prev) =>
       prev.map((g) => (g.id === guestId ? { ...g, ...updates } : g))
     )
     const supabase = createClient()
-    const patch: Record<string, number> = {}
-    if (updates.cash_in !== undefined) patch.cash_in = updates.cash_in ?? 0
-    if (updates.cash_out !== undefined) patch.cash_out = updates.cash_out ?? 0
-    await supabase.from("game_guests").update(patch).eq("id", guestId)
+    const { error } = await supabase
+      .from("game_guests")
+      .update(toGuestAmountPatch(updates))
+      .eq("id", guestId)
+      .eq("game_id", game.id)
+    if (error) {
+      toast.error("Failed to update guest amount")
+      await fetchAll()
+    }
   }
 
   async function removeGuest(guestId: string) {
+    if (isClosed) return
     setGuests((prev) => prev.filter((g) => g.id !== guestId))
     const supabase = createClient()
-    await supabase.from("game_guests").delete().eq("id", guestId)
+    const { error } = await supabase
+      .from("game_guests")
+      .delete()
+      .eq("id", guestId)
+      .eq("game_id", game.id)
+    if (error) {
+      toast.error("Failed to remove guest")
+      await fetchAll()
+    }
   }
 
   async function handleKick(userId: string) {
@@ -238,7 +245,7 @@ export function GameSession({
     try {
       await kickPlayer(game.id, userId)
       toast.success("Player removed")
-    } catch (err) {
+    } catch {
       toast.error("Failed to remove player")
       // Revert by refetching
       fetchAll()
@@ -411,9 +418,6 @@ export function GameSession({
       })
     }
   }
-
-  // Keep fetchPlayers as alias for backwards compat with realtime callbacks
-  const fetchPlayers = fetchAll
 
   useEffect(() => {
     const supabase = createClient()
@@ -1332,7 +1336,7 @@ export function GameSession({
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
                         setFieldEditing(`guest-${guest.id}-cash_in`, false)
-                        updateGuestDb(guest.id, { cash_in: v })
+                        void updateGuestDb(guest.id, { cash_in: v })
                       }}
                       disabled={isClosed}
                     />
@@ -1360,14 +1364,15 @@ export function GameSession({
                       onBlur={(e) => {
                         const v = parseCashInput(e.target.value)
                         setFieldEditing(`guest-${guest.id}-cash_out`, false)
-                        updateGuestDb(guest.id, { cash_out: v })
+                        void updateGuestDb(guest.id, { cash_out: v })
                       }}
                       disabled={isClosed}
                     />
                     <button
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       aria-label={`Remove guest ${guest.name}`}
-                      onClick={() => removeGuest(guest.id)}
+                      onClick={() => void removeGuest(guest.id)}
+                      disabled={isClosed}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
