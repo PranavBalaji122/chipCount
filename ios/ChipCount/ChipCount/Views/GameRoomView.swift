@@ -359,7 +359,7 @@ struct GameRoomView: View {
 
   private func addGuest() async {
     do {
-      _ = try await service.addGuest(
+      try await service.addGuest(
         gameId: gameId,
         name: guestName,
         cashIn: guestCashIn,
