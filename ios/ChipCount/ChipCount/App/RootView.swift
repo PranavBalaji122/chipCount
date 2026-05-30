@@ -9,6 +9,8 @@ struct RootView: View {
         SplashView()
       } else if authStore.currentUser == nil {
         AuthView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .ignoresSafeArea()
       } else if authStore.needsProfileSetup {
         ProfileSetupView()
       } else {
