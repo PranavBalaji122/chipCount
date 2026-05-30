@@ -44,7 +44,7 @@ export default async function DashboardLayout({
           </nav>
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className="flex-1 p-4">
+      <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 md:py-8">
         {children}
       </main>
     </div>
