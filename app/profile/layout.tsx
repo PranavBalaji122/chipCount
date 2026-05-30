@@ -44,7 +44,9 @@ export default async function ProfileLayout({
           </nav>
         </div>
       </header>
-      <main className="flex-1 p-4">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 p-4">
+        {children}
+      </main>
     </div>
   )
 }

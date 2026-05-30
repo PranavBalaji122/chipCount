@@ -71,6 +71,8 @@ export function PlayerSummary({
   player: PlayerSchema
   slippage: number
 }) {
+  const netStatus =
+    player.net > 1e-9 ? "profit" : player.net < -1e-9 ? "loss" : "even"
   const transactionTypes = [
     {
       data: player.paidBy,
@@ -111,6 +113,7 @@ export function PlayerSummary({
           }`}
         >
           {formatDollar(player.net)}
+          <span className="sr-only"> {netStatus}</span>
         </CardAction>
       </CardHeader>
       {nonEmptyTransactions.length > 0 && (

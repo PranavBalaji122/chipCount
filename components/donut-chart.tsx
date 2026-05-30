@@ -23,7 +23,7 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
     let success: string
     let destructive: string
     let muted: string
-    
+
     if (typeof window === "undefined") {
       // Server-side fallback colors
       success = "#22c55e"
@@ -31,19 +31,21 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
       muted = "#71717a"
     } else {
       // Check for dark mode and use appropriate colors
-      const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-      
+      const isDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+
       if (isDark) {
-        success = "#4ade80"  // green-400
-        destructive = "#f87171"  // red-400
-        muted = "#9ca3af"  // gray-400
+        success = "#4ade80" // green-400
+        destructive = "#f87171" // red-400
+        muted = "#9ca3af" // gray-400
       } else {
-        success = "#22c55e"  // green-500
-        destructive = "#ef4444"  // red-500
-        muted = "#71717a"  // zinc-500
+        success = "#22c55e" // green-500
+        destructive = "#ef4444" // red-500
+        muted = "#71717a" // zinc-500
       }
     }
-    
+
     return chroma
       .scale([success, muted, destructive])
       .mode("lrgb")
@@ -72,7 +74,7 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
       config={chartConfig}
       className="m-auto mx-auto aspect-6/5 h-[250px]"
     >
-      <PieChart>
+      <PieChart accessibilityLayer>
         <ChartTooltip
           cursor={false}
           content={
@@ -98,7 +100,7 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
           outerRadius={100}
           innerRadius={90}
           strokeWidth={2}
-          stroke="hsl(var(--background))"
+          stroke="var(--background)"
           paddingAngle={5}
         >
           <LabelList
@@ -117,7 +119,7 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
           outerRadius={80}
           innerRadius={totalPot < 100 ? 50 : totalPot < 1000 ? 60 : 63.5}
           strokeWidth={2}
-          stroke="hsl(var(--background))"
+          stroke="var(--background)"
           paddingAngle={5}
         >
           {Math.abs(payout.slippage) < 1e-9 && (

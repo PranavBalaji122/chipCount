@@ -45,7 +45,9 @@ export default async function GameLayout({
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
-              <Button variant="ghost" size="sm">Dashboard</Button>
+              <Button variant="ghost" size="sm">
+                Dashboard
+              </Button>
             </Link>
             <span className="text-muted-foreground">/</span>
             <Link
@@ -68,8 +70,9 @@ export default async function GameLayout({
           </Link>
         </div>
       </header>
-      <main className="flex-1 p-4">{children}</main>
+      <main id="main-content" tabIndex={-1} className="flex-1 p-4">
+        {children}
+      </main>
     </div>
   )
 }
-
