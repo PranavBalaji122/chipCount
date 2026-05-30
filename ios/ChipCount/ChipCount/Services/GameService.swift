@@ -175,7 +175,7 @@ struct GameService {
 
   func closeSession(gameId: String) async throws {
     let _: String = try await supabase
-      .rpc("close_session_with_debts", params: CloseSessionParams(pGameId: gameId, pFinalStatus: "closed"))
+      .rpc("close_session_with_debts", params: ["p_game_id": gameId, "p_final_status": "closed"])
       .execute()
       .value
   }
@@ -225,12 +225,14 @@ struct GameService {
   }
 
   func observeGame(gameId: String, onChange: @escaping @Sendable () async -> Void) async -> Task<Void, Never> {
-    let channel = supabase.channel("chipcount-game-\(gameId)")
+    let channel = supabase.channel("chipcount-game-\(gameId)-\(UUID().uuidString)")
     let changes = channel.postgresChange(AnyAction.self, schema: "public")
     await channel.subscribe()
 
     return Task {
+      defer { Task { await supabase.removeChannel(channel) } }
       for await _ in changes {
+        if Task.isCancelled { break }
         await onChange()
       }
     }
@@ -374,15 +376,7 @@ private struct GuestPatch: Encodable {
   }
 }
 
-private struct CloseSessionParams: Encodable {
-  let pGameId: String
-  let pFinalStatus: String
 
-  enum CodingKeys: String, CodingKey {
-    case pGameId = "p_game_id"
-    case pFinalStatus = "p_final_status"
-  }
-}
 
 private struct TransferHostParams: Encodable {
   let pGameId: String
