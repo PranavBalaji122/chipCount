@@ -145,14 +145,11 @@ struct GameService {
       .execute()
   }
 
-  func addGuest(gameId: String, name: String, cashIn: Double, cashOut: Double) async throws -> GameGuest {
+  func addGuest(gameId: String, name: String, cashIn: Double, cashOut: Double) async throws {
     try await supabase
       .from("game_guests")
       .insert(NewGuest(gameId: gameId, name: name, cashIn: cashIn, cashOut: cashOut))
-      .select("id, game_id, name, cash_in, cash_out")
-      .single()
       .execute()
-      .value
   }
 
   func updateGuest(_ guest: GameGuest) async throws {
@@ -172,9 +169,10 @@ struct GameService {
   }
 
   func closeSession(gameId: String) async throws {
-    try await supabase
+    let _: String = try await supabase
       .rpc("close_session_with_debts", params: CloseSessionParams(pGameId: gameId, pFinalStatus: "closed"))
       .execute()
+      .value
   }
 
   func reopenSession(gameId: String) async throws {
