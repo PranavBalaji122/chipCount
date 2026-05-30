@@ -162,6 +162,8 @@ struct TablesView: View {
     do {
       memberships = try await service.listTables(userId: userId)
       errorMessage = nil
+    } catch is CancellationError {
+      // Ignore
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -175,6 +177,8 @@ struct TablesView: View {
       showingCreate = false
       await loadTables()
       selectedGame = game
+    } catch is CancellationError {
+      // Ignore
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -188,6 +192,8 @@ struct TablesView: View {
       showingJoin = false
       await loadTables()
       selectedGame = game
+    } catch is CancellationError {
+      // Ignore
     } catch {
       errorMessage = error.localizedDescription
     }
