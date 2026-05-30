@@ -36,11 +36,13 @@ struct GameService {
       .execute()
 
     if !guests.isEmpty {
-      let newGuests = guests.map { NewGuest(gameId: game.id, name: $0, cashIn: 0, cashOut: 0) }
-      try? await supabase
-        .from("game_guests")
-        .insert(newGuests)
-        .execute()
+      for guestName in guests {
+        let newGuest = NewGuest(gameId: game.id, name: guestName, cashIn: 0, cashOut: 0)
+        try await supabase
+          .from("game_guests")
+          .insert(newGuest)
+          .execute()
+      }
     }
 
     return game
