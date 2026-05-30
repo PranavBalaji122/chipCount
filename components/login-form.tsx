@@ -1,143 +1,146 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Loader2 } from "lucide-react"
-import Link from "next/link"
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email"),
-  password: z.string().min(6, "At least 6 characters")
-})
+  password: z.string().min(6, "At least 6 characters"),
+});
 
-type SignInValues = z.infer<typeof signInSchema>
+type SignInValues = z.infer<typeof signInSchema>;
 
 const signUpSchema = signInSchema.extend({
-  displayName: z.string().min(1, "Name required").max(50)
-})
+  displayName: z.string().min(1, "Name required").max(50),
+});
 
-type SignUpValues = z.infer<typeof signUpSchema>
+type SignUpValues = z.infer<typeof signUpSchema>;
 
 export function LoginForm({ next }: { next?: string }) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const nextPath = next ?? searchParams.get("next") ?? "/dashboard"
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
-  const [googleLoading, setGoogleLoading] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = next ?? searchParams.get("next") ?? "/dashboard";
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const signInForm = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { email: "", password: "" }
-  })
+    defaultValues: { email: "", password: "" },
+  });
 
   const signUpForm = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: "", password: "", displayName: "" }
-  })
+    defaultValues: { email: "", password: "", displayName: "" },
+  });
 
   const handleGoogleSignIn = useCallback(async () => {
-    setGoogleLoading(true)
-    setMessage(null)
-    const supabase = createClient()
-    const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`
+    setGoogleLoading(true);
+    setMessage(null);
+    const supabase = createClient();
+    const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo }
-    })
+      options: { redirectTo },
+    });
     if (error) {
-      setMessage({ type: "error", text: error.message })
-      setGoogleLoading(false)
+      setMessage({ type: "error", text: error.message });
+      setGoogleLoading(false);
     }
     // On success the browser navigates away; no need to reset loading
-  }, [nextPath])
+  }, [nextPath]);
 
   async function onSignIn(values: SignInValues) {
-    setMessage(null)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword(values)
+    setMessage(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword(values);
     if (error) {
-      setMessage({ type: "error", text: error.message })
-      return
+      setMessage({ type: "error", text: error.message });
+      return;
     }
-    router.push(nextPath)
-    router.refresh()
+    router.push(nextPath);
+    router.refresh();
   }
 
   async function onSignUp(values: SignUpValues) {
-    setMessage(null)
-    const supabase = createClient()
+    setMessage(null);
+    const supabase = createClient();
 
     const { data: existingUser, error: checkError } = await supabase
       .from("profiles")
       .select("display_name")
       .eq("display_name", values.displayName)
-      .single()
+      .single();
 
     if (checkError && checkError.code !== "PGRST116") {
       setMessage({
         type: "error",
-        text: "Error checking display name. Please try again."
-      })
-      return
+        text: "Error checking display name. Please try again.",
+      });
+      return;
     }
 
     if (existingUser) {
       signUpForm.setError("displayName", {
         type: "manual",
-        message: "This display name is already taken."
-      })
-      return
+        message: "This display name is already taken.",
+      });
+      return;
     }
 
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        data: { display_name: values.displayName }
-      }
-    })
+        data: { display_name: values.displayName },
+      },
+    });
     if (error) {
       if (
         error.message.includes("duplicate key value violates unique constraint")
       ) {
         signUpForm.setError("displayName", {
           type: "manual",
-          message: "This display name is already taken."
-        })
+          message: "This display name is already taken.",
+        });
       } else {
-        setMessage({ type: "error", text: error.message })
+        setMessage({ type: "error", text: error.message });
       }
-      return
+      return;
     }
     setMessage({
       type: "success",
-      text: "Check your email to confirm your account, then sign in."
-    })
+      text: "Check your email to confirm your account, then sign in.",
+    });
     setTimeout(() => {
-      router.push("/login")
-    }, 2000)
+      router.push("/login");
+    }, 2000);
   }
 
   return (
@@ -162,7 +165,11 @@ export function LoginForm({ next }: { next?: string }) {
           {googleLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 shrink-0"
+              aria-hidden="true"
+            >
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -341,10 +348,10 @@ export function LoginForm({ next }: { next?: string }) {
         <button
           type="button"
           onClick={() => {
-            setIsSignUp((v) => !v)
-            setMessage(null)
-            signInForm.reset()
-            signUpForm.reset()
+            setIsSignUp((v) => !v);
+            setMessage(null);
+            signInForm.reset();
+            signUpForm.reset();
           }}
           className="text-muted-foreground text-sm underline"
         >
@@ -356,5 +363,5 @@ export function LoginForm({ next }: { next?: string }) {
         </p>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Link as LinkIcon, Eraser } from "lucide-react"
-import { toast } from "sonner"
+import { Button } from "@/components/ui/button";
+import { Link as LinkIcon, Eraser } from "lucide-react";
+import { toast } from "sonner";
 
-export function FormActions() { 
+export function FormActions() {
   const copyUrlToClipboard = () => {
     navigator.clipboard.writeText(window.location.href).then(
       () => toast.success("Link copied to clipboard"),
-      () => toast.error("Failed to copy URL to clipboard.")
-    )
-  }
+      () => toast.error("Failed to copy URL to clipboard."),
+    );
+  };
 
   const clearForm = () => {
-    window.location.href = "/"
-    window.location.reload()
-  }
+    window.location.href = "/";
+    window.location.reload();
+  };
 
   return (
     <div className="flex flex-row justify-center space-x-2">
@@ -28,5 +28,5 @@ export function FormActions() {
         Copy Link
       </Button>
     </div>
-  )
+  );
 }

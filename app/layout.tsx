@@ -1,24 +1,24 @@
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { NuqsAdapter } from "nuqs/adapters/next/app"
-import { Toaster } from "@/components/ui/sonner"
-import { Analytics } from "@vercel/analytics/next"
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap"
-})
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "ChipCount",
-  description: "Calculate Poker Payouts"
-}
+  description: "Calculate Poker Payouts",
+};
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -33,5 +33,5 @@ export default function RootLayout({
         <Analytics />
       </body>
     </html>
-  )
+  );
 }

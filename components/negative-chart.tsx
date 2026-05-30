@@ -1,23 +1,23 @@
-import { PlayerSchema } from "@/lib/schemas"
+import { PlayerSchema } from "@/lib/schemas";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent
-} from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, Cell, LabelList } from "recharts"
-import { formatDollar } from "@/lib/utils"
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList } from "recharts";
+import { formatDollar } from "@/lib/utils";
 
 function shortChartLabel(value: string) {
-  return value.length > 14 ? `${value.slice(0, 13)}…` : value
+  return value.length > 14 ? `${value.slice(0, 13)}…` : value;
 }
 
 export function NegativeChart({ players }: { players: PlayerSchema[] }) {
   const chartConfig = {
     net: {
-      label: "Net"
-    }
-  } satisfies ChartConfig
+      label: "Net",
+    },
+  } satisfies ChartConfig;
 
   return (
     <ChartContainer
@@ -33,7 +33,7 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
               ? "var(--success)"
               : player.net < -1e-9
                 ? "var(--destructive)"
-                : "var(--muted-foreground)"
+                : "var(--muted-foreground)",
         }))}
       >
         <CartesianGrid
@@ -73,5 +73,5 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
         </Bar>
       </BarChart>
     </ChartContainer>
-  )
+  );
 }

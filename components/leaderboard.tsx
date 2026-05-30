@@ -1,22 +1,22 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import Link from "next/link"
-import { formatDollar } from "@/lib/utils"
+  CardTitle,
+} from "@/components/ui/card";
+import Link from "next/link";
+import { formatDollar } from "@/lib/utils";
 
 export async function Leaderboard() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, display_name, net_profit")
     .eq("profile_public", true)
     .order("net_profit", { ascending: false })
-    .limit(3)
+    .limit(3);
 
   return (
     <Card id="leaderboard">
@@ -39,9 +39,9 @@ export async function Leaderboard() {
                 className="flex items-center justify-between rounded border px-3 py-2"
               >
                 {(() => {
-                  const net = Number(p.net_profit)
+                  const net = Number(p.net_profit);
                   const netLabel =
-                    net > 0 ? "profit" : net < 0 ? "loss" : "even"
+                    net > 0 ? "profit" : net < 0 ? "loss" : "even";
                   return (
                     <>
                       <span className="font-medium">
@@ -60,7 +60,7 @@ export async function Leaderboard() {
                         <span className="sr-only">{netLabel}</span>
                       </span>
                     </>
-                  )
+                  );
                 })()}
               </li>
             ))}
@@ -68,5 +68,5 @@ export async function Leaderboard() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

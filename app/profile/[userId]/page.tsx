@@ -1,37 +1,37 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import Link from "next/link"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { formatDollar } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { NetProfitGraph } from "@/components/net-profit-graph"
-import { IoLogoVenmo } from "react-icons/io5"
+  CardTitle,
+} from "@/components/ui/card";
+import { formatDollar } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { NetProfitGraph } from "@/components/net-profit-graph";
+import { IoLogoVenmo } from "react-icons/io5";
 
 export default async function PublicProfilePage({
-  params
+  params,
 }: {
-  params: Promise<{ userId: string }>
+  params: Promise<{ userId: string }>;
 }) {
-  const { userId } = await params
-  const supabase = await createClient()
+  const { userId } = await params;
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, display_name, phone, email, venmo_handle, net_profit, profile_public"
+      "id, display_name, phone, email, venmo_handle, net_profit, profile_public",
     )
     .eq("id", userId)
-    .single()
+    .single();
 
-  if (!profile || !profile.profile_public) notFound()
+  if (!profile || !profile.profile_public) notFound();
 
-  const net = Number(profile.net_profit)
-  const netLabel = net > 0 ? "profit" : net < 0 ? "loss" : "even"
+  const net = Number(profile.net_profit);
+  const netLabel = net > 0 ? "profit" : net < 0 ? "loss" : "even";
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -71,5 +71,5 @@ export default async function PublicProfilePage({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   LineChart,
@@ -7,18 +7,24 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
-} from "recharts"
-import { formatDollar } from "@/lib/utils"
+  ResponsiveContainer,
+} from "recharts";
+import { formatDollar } from "@/lib/utils";
 
-type Point = { at: string; net: number }
+type Point = { at: string; net: number };
 
 export function NetProfitChart({ points }: { points: Point[] }) {
   return (
     <div className="h-[200px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={points} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+        <LineChart
+          data={points}
+          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="rgba(255,255,255,0.08)"
+          />
           <XAxis
             dataKey="at"
             tick={{ fontSize: 12, fill: "#a1a1aa" }}
@@ -56,5 +62,5 @@ export function NetProfitChart({ points }: { points: Point[] }) {
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

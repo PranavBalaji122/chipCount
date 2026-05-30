@@ -1,43 +1,43 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect, notFound } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { BarChart2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/server";
+import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { BarChart2 } from "lucide-react";
 
 export default async function GameLayout({
   children,
-  params
+  params,
 }: {
-  children: React.ReactNode
-  params: Promise<{ gameId: string }>
+  children: React.ReactNode;
+  params: Promise<{ gameId: string }>;
 }) {
-  const { gameId } = await params
-  const supabase = await createClient()
+  const { gameId } = await params;
+  const supabase = await createClient();
   const {
-    data: { user }
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: game } = await supabase
     .from("games")
     .select("id, short_code, host_id, status, description")
     .eq("id", gameId)
-    .single()
+    .single();
 
-  if (!game) notFound()
+  if (!game) notFound();
 
   const { data: myParticipation } = await supabase
     .from("game_players")
     .select("status")
     .eq("game_id", gameId)
     .eq("user_id", user.id)
-    .single()
+    .single();
 
-  const isHost = game.host_id === user.id
-  const isPlayer = !!myParticipation
-  if (!isHost && !isPlayer) notFound()
+  const isHost = game.host_id === user.id;
+  const isPlayer = !!myParticipation;
+  if (!isHost && !isPlayer) notFound();
 
-  const gameLabel = game.description || `Game ${game.short_code}`
+  const gameLabel = game.description || `Game ${game.short_code}`;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -74,5 +74,5 @@ export default async function GameLayout({
         {children}
       </main>
     </div>
-  )
+  );
 }

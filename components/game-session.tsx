@@ -1,36 +1,36 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   closeGame,
   setGameStatus,
   kickPlayer,
   requestRejoin,
   transferHost,
-  updateRequestedAmounts
-} from "@/lib/actions"
-import { calcPayouts } from "@/lib/utils"
-import { parseCashInput, toGuestAmountPatch } from "@/lib/guest-amounts"
-import type { GameSchema } from "@/lib/schemas"
+  updateRequestedAmounts,
+} from "@/lib/actions";
+import { calcPayouts } from "@/lib/utils";
+import { parseCashInput, toGuestAmountPatch } from "@/lib/guest-amounts";
+import type { GameSchema } from "@/lib/schemas";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { PayoutStatsView } from "./payout-stats-view"
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PayoutStatsView } from "./payout-stats-view";
 import {
   Loader2,
   Check,
@@ -39,83 +39,85 @@ import {
   Lock,
   LockOpen,
   Crown,
-  ArrowRightLeft
-} from "lucide-react"
-import { toast } from "sonner"
+  ArrowRightLeft,
+} from "lucide-react";
+import { toast } from "sonner";
 
 type Game = {
-  id: string
-  short_code: string
-  host_id: string
-  description: string | null
-  status: string
-}
+  id: string;
+  short_code: string;
+  host_id: string;
+  description: string | null;
+  status: string;
+};
 
 type PlayerRow = {
-  user_id: string
-  status: "pending" | "approved" | "denied"
-  cash_in: number | null
-  cash_out: number | null
-  requested_cash_in: number | null
-  requested_cash_out: number | null
-  display_name: string | null
-  venmo_handle: string | null
-}
+  user_id: string;
+  status: "pending" | "approved" | "denied";
+  cash_in: number | null;
+  cash_out: number | null;
+  requested_cash_in: number | null;
+  requested_cash_out: number | null;
+  display_name: string | null;
+  venmo_handle: string | null;
+};
 
 type GuestPlayer = {
-  id: string
-  name: string
-  cash_in: number | null
-  cash_out: number | null
-}
+  id: string;
+  name: string;
+  cash_in: number | null;
+  cash_out: number | null;
+};
 
 export function GameSession({
   game,
   initialPlayers,
+  initialGuests,
   currentUserId,
-  baseUrl
+  baseUrl,
 }: {
-  game: Game
-  initialPlayers: PlayerRow[]
-  currentUserId: string
-  isHost: boolean
-  baseUrl?: string
+  game: Game;
+  initialPlayers: PlayerRow[];
+  initialGuests: GuestPlayer[];
+  currentUserId: string;
+  isHost: boolean;
+  baseUrl?: string;
 }) {
-  const router = useRouter()
-  const [players, setPlayers] = useState<PlayerRow[]>(initialPlayers)
-  const [updating, setUpdating] = useState<string | null>(null)
-  const [ending, setEnding] = useState(false)
-  const [togglingClose, setTogglingClose] = useState(false)
-  const [kicking, setKicking] = useState<string | null>(null)
-  const [gameStatus, setGameStatus_] = useState(game.status)
-  const [hostId, setHostId] = useState(game.host_id)
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null)
-  const [transferring, setTransferring] = useState(false)
-  const [transferConfirm, setTransferConfirm] = useState(false)
-  const [copyFeedback, setCopyFeedback] = useState("")
+  const router = useRouter();
+  const [players, setPlayers] = useState<PlayerRow[]>(initialPlayers);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [ending, setEnding] = useState(false);
+  const [togglingClose, setTogglingClose] = useState(false);
+  const [kicking, setKicking] = useState<string | null>(null);
+  const [gameStatus, setGameStatus_] = useState(game.status);
+  const [hostId, setHostId] = useState(game.host_id);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null);
+  const [transferring, setTransferring] = useState(false);
+  const [transferConfirm, setTransferConfirm] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState("");
 
   // Guest functionality — persisted to game_guests table
-  const [guests, setGuests] = useState<GuestPlayer[]>([])
+  const [guests, setGuests] = useState<GuestPlayer[]>(initialGuests);
   const [guestForm, setGuestForm] = useState({
     name: "",
     cash_in: "",
-    cash_out: ""
-  })
-  const [lastGameStatus, setLastGameStatus] = useState(game.status)
+    cash_out: "",
+  });
+  const [lastGameStatus, setLastGameStatus] = useState(game.status);
 
   // Track fields currently being edited to prevent overwrites (ref so fetchAll always sees current value)
-  const editingFieldsRef = useRef<Set<string>>(new Set())
+  const editingFieldsRef = useRef<Set<string>>(new Set());
 
   const setFieldEditing = (fieldKey: string, editing: boolean) => {
     if (editing) {
-      editingFieldsRef.current.add(fieldKey)
+      editingFieldsRef.current.add(fieldKey);
     } else {
-      editingFieldsRef.current.delete(fieldKey)
+      editingFieldsRef.current.delete(fieldKey);
     }
-  }
+  };
 
   // Derive isHost reactively from hostId state so host transfers update the UI instantly
-  const isHost = hostId === currentUserId
+  const isHost = hostId === currentUserId;
 
   // Auto-delete guests when session is reopened (closed -> active)
   useEffect(() => {
@@ -127,54 +129,54 @@ export function GameSession({
     ) {
       // Delete all guests from database
       const deleteGuests = async () => {
-        const supabase = createClient()
+        const supabase = createClient();
         const { error } = await supabase
           .from("game_guests")
           .delete()
-          .eq("game_id", game.id)
+          .eq("game_id", game.id);
         if (error) {
-          console.error("Failed to delete guests:", error)
-          toast.error("Failed to remove guests")
+          console.error("Failed to delete guests:", error);
+          toast.error("Failed to remove guests");
         } else {
-          setGuests([])
-          toast.success("Guests have been removed as the session was reopened")
+          setGuests([]);
+          toast.success("Guests have been removed as the session was reopened");
         }
-      }
-      deleteGuests()
+      };
+      deleteGuests();
     }
-    setLastGameStatus(gameStatus)
-  }, [gameStatus, lastGameStatus, isHost, guests.length, game.id])
+    setLastGameStatus(gameStatus);
+  }, [gameStatus, lastGameStatus, isHost, guests.length, game.id]);
 
   const origin =
-    baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "")
-  const inviteUrl = `${origin}/invite/${game.short_code}`
+    baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
+  const inviteUrl = `${origin}/invite/${game.short_code}`;
 
-  const isClosed = gameStatus === "closed"
-  const approved = players.filter((p) => p.status === "approved")
-  const pending = players.filter((p) => p.status === "pending")
+  const isClosed = gameStatus === "closed";
+  const approved = players.filter((p) => p.status === "approved");
+  const pending = players.filter((p) => p.status === "pending");
 
   const playerName = (p: PlayerRow) =>
-    p.display_name || p.venmo_handle || `Player ${p.user_id.slice(0, 8)}`
+    p.display_name || p.venmo_handle || `Player ${p.user_id.slice(0, 8)}`;
 
   // Guest management — persisted to Supabase
   async function addGuest(name: string) {
-    if (!name.trim()) return
-    const supabase = createClient()
-    const cashIn = parseCashInput(guestForm.cash_in)
-    const cashOut = parseCashInput(guestForm.cash_out)
+    if (!name.trim()) return;
+    const supabase = createClient();
+    const cashIn = parseCashInput(guestForm.cash_in);
+    const cashOut = parseCashInput(guestForm.cash_out);
     const { data, error } = await supabase
       .from("game_guests")
       .insert({
         game_id: game.id,
         name: name.trim(),
         cash_in: cashIn ?? 0,
-        cash_out: cashOut ?? 0
+        cash_out: cashOut ?? 0,
       })
       .select("id, name, cash_in, cash_out")
-      .single()
+      .single();
     if (error) {
-      toast.error("Failed to add guest")
-      return
+      toast.error("Failed to add guest");
+      return;
     }
     setGuests((prev) => [
       ...prev,
@@ -182,133 +184,133 @@ export function GameSession({
         id: data.id,
         name: data.name,
         cash_in: data.cash_in,
-        cash_out: data.cash_out
-      }
-    ])
-    setGuestForm({ name: "", cash_in: "", cash_out: "" })
-    toast.success(`Guest "${data.name}" added`)
+        cash_out: data.cash_out,
+      },
+    ]);
+    setGuestForm({ name: "", cash_in: "", cash_out: "" });
+    toast.success(`Guest "${data.name}" added`);
   }
 
   function handleGuestNameChange(name: string) {
-    setGuestForm((prev) => ({ ...prev, name }))
+    setGuestForm((prev) => ({ ...prev, name }));
   }
 
   function handleGuestNameBlur() {
-    const name = guestForm.name.trim()
-    if (!name) return
+    const name = guestForm.name.trim();
+    if (!name) return;
     const existsAlready = guests.some(
-      (g) => g.name.toLowerCase() === name.toLowerCase()
-    )
+      (g) => g.name.toLowerCase() === name.toLowerCase(),
+    );
     if (!existsAlready) {
-      addGuest(name)
+      addGuest(name);
     }
   }
 
   async function updateGuestDb(
     guestId: string,
-    updates: Partial<Pick<GuestPlayer, "cash_in" | "cash_out">>
+    updates: Partial<Pick<GuestPlayer, "cash_in" | "cash_out">>,
   ) {
-    if (isClosed) return
+    if (isClosed) return;
     setGuests((prev) =>
-      prev.map((g) => (g.id === guestId ? { ...g, ...updates } : g))
-    )
-    const supabase = createClient()
+      prev.map((g) => (g.id === guestId ? { ...g, ...updates } : g)),
+    );
+    const supabase = createClient();
     const { error } = await supabase
       .from("game_guests")
       .update(toGuestAmountPatch(updates))
       .eq("id", guestId)
-      .eq("game_id", game.id)
+      .eq("game_id", game.id);
     if (error) {
-      toast.error("Failed to update guest amount")
-      await fetchAll()
+      toast.error("Failed to update guest amount");
+      await fetchAll();
     }
   }
 
   async function removeGuest(guestId: string) {
-    if (isClosed) return
-    setGuests((prev) => prev.filter((g) => g.id !== guestId))
-    const supabase = createClient()
+    if (isClosed) return;
+    setGuests((prev) => prev.filter((g) => g.id !== guestId));
+    const supabase = createClient();
     const { error } = await supabase
       .from("game_guests")
       .delete()
       .eq("id", guestId)
-      .eq("game_id", game.id)
+      .eq("game_id", game.id);
     if (error) {
-      toast.error("Failed to remove guest")
-      await fetchAll()
+      toast.error("Failed to remove guest");
+      await fetchAll();
     }
   }
 
   async function handleKick(userId: string) {
-    setKicking(userId)
+    setKicking(userId);
     // Optimistic: remove from local list immediately
-    setPlayers((prev) => prev.filter((p) => p.user_id !== userId))
+    setPlayers((prev) => prev.filter((p) => p.user_id !== userId));
     try {
-      await kickPlayer(game.id, userId)
-      toast.success("Player removed")
+      await kickPlayer(game.id, userId);
+      toast.success("Player removed");
     } catch {
-      toast.error("Failed to remove player")
+      toast.error("Failed to remove player");
       // Revert by refetching
-      fetchAll()
+      fetchAll();
     } finally {
-      setKicking(null)
+      setKicking(null);
     }
   }
 
   async function handleTransferHost(targetUserId: string) {
-    setTransferring(true)
+    setTransferring(true);
     try {
-      await transferHost(game.id, targetUserId)
-      toast.success("Host transferred successfully")
+      await transferHost(game.id, targetUserId);
+      toast.success("Host transferred successfully");
       // Update local state immediately so the UI flips without waiting for a poll/refresh
-      setHostId(targetUserId)
-      setSelectedPlayer(null)
-      setTransferConfirm(false)
-      router.refresh()
+      setHostId(targetUserId);
+      setSelectedPlayer(null);
+      setTransferConfirm(false);
+      router.refresh();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to transfer host"
-      )
+        err instanceof Error ? err.message : "Failed to transfer host",
+      );
     } finally {
-      setTransferring(false)
+      setTransferring(false);
     }
   }
 
   // Fetch fresh player + guest data directly from Supabase on the client
   async function fetchAll() {
-    const supabase = createClient()
+    const supabase = createClient();
 
     const { data: gameData } = await supabase
       .from("games")
       .select("status, host_id")
       .eq("id", game.id)
-      .single()
+      .single();
     if (gameData) {
-      setGameStatus_(gameData.status as "active" | "closed" | "ended")
-      setHostId(gameData.host_id)
+      setGameStatus_(gameData.status as "active" | "closed" | "ended");
+      setHostId(gameData.host_id);
     }
 
     const { data } = await supabase
       .from("game_players")
       .select(
-        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
+        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)",
       )
-      .eq("game_id", game.id)
+      .eq("game_id", game.id);
     if (data) {
       const newPlayers = data.map(
         (p: {
-          user_id: string
-          status: string
-          cash_in: number | null
-          cash_out: number | null
-          requested_cash_in: number | null
-          requested_cash_out: number | null
+          user_id: string;
+          status: string;
+          cash_in: number | null;
+          cash_out: number | null;
+          requested_cash_in: number | null;
+          requested_cash_out: number | null;
           profile:
             | { display_name: string | null; venmo_handle: string | null }
             | { display_name: string | null; venmo_handle: string | null }[]
-            | null
+            | null;
         }) => {
-          const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
+          const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile;
           return {
             user_id: p.user_id,
             status: p.status as "pending" | "approved" | "denied",
@@ -327,36 +329,36 @@ export function GameSession({
                   : Number(p.cash_out)
                 : Number(p.requested_cash_out),
             display_name: prof?.display_name ?? null,
-            venmo_handle: prof?.venmo_handle ?? null
-          }
-        }
-      )
+            venmo_handle: prof?.venmo_handle ?? null,
+          };
+        },
+      );
 
       // Merge with existing players to preserve editing state
       setPlayers((prevPlayers) => {
         return newPlayers.map((newPlayer) => {
           const existing = prevPlayers.find(
-            (p) => p.user_id === newPlayer.user_id
-          )
-          if (!existing) return newPlayer
+            (p) => p.user_id === newPlayer.user_id,
+          );
+          if (!existing) return newPlayer;
 
-          const ef = editingFieldsRef.current
-          const hostEditingCashIn = ef.has(`host-${newPlayer.user_id}-cash_in`)
+          const ef = editingFieldsRef.current;
+          const hostEditingCashIn = ef.has(`host-${newPlayer.user_id}-cash_in`);
           const hostEditingCashOut = ef.has(
-            `host-${newPlayer.user_id}-cash_out`
-          )
+            `host-${newPlayer.user_id}-cash_out`,
+          );
           const selfEditingRequestedIn = ef.has(
-            `self-${newPlayer.user_id}-requested_cash_in`
-          )
+            `self-${newPlayer.user_id}-requested_cash_in`,
+          );
           const selfEditingRequestedOut = ef.has(
-            `self-${newPlayer.user_id}-requested_cash_out`
-          )
+            `self-${newPlayer.user_id}-requested_cash_out`,
+          );
           const pendingEditingRequestedIn = ef.has(
-            `pending-${newPlayer.user_id}-requested_cash_in`
-          )
+            `pending-${newPlayer.user_id}-requested_cash_in`,
+          );
           const pendingEditingRequestedOut = ef.has(
-            `pending-${newPlayer.user_id}-requested_cash_out`
-          )
+            `pending-${newPlayer.user_id}-requested_cash_out`,
+          );
 
           return {
             ...newPlayer,
@@ -371,57 +373,57 @@ export function GameSession({
             requested_cash_out:
               selfEditingRequestedOut || pendingEditingRequestedOut
                 ? existing.requested_cash_out
-                : newPlayer.requested_cash_out
-          }
-        })
-      })
+                : newPlayer.requested_cash_out,
+          };
+        });
+      });
     }
 
     // Fetch persisted guests
     const { data: guestData } = await supabase
       .from("game_guests")
       .select("id, name, cash_in, cash_out")
-      .eq("game_id", game.id)
+      .eq("game_id", game.id);
     if (guestData) {
       const newGuests = guestData.map(
         (g: {
-          id: string
-          name: string
-          cash_in: number
-          cash_out: number
+          id: string;
+          name: string;
+          cash_in: number;
+          cash_out: number;
         }) => ({
           id: g.id,
           name: g.name,
           cash_in: g.cash_in,
-          cash_out: g.cash_out
-        })
-      )
+          cash_out: g.cash_out,
+        }),
+      );
 
       // Merge with existing guests to preserve editing state
       setGuests((prevGuests) => {
         return newGuests.map((newGuest) => {
-          const existing = prevGuests.find((g) => g.id === newGuest.id)
-          if (!existing) return newGuest
+          const existing = prevGuests.find((g) => g.id === newGuest.id);
+          if (!existing) return newGuest;
 
           const editingCashIn = editingFieldsRef.current.has(
-            `guest-${newGuest.id}-cash_in`
-          )
+            `guest-${newGuest.id}-cash_in`,
+          );
           const editingCashOut = editingFieldsRef.current.has(
-            `guest-${newGuest.id}-cash_out`
-          )
+            `guest-${newGuest.id}-cash_out`,
+          );
 
           return {
             ...newGuest,
             cash_in: editingCashIn ? existing.cash_in : newGuest.cash_in,
-            cash_out: editingCashOut ? existing.cash_out : newGuest.cash_out
-          }
-        })
-      })
+            cash_out: editingCashOut ? existing.cash_out : newGuest.cash_out,
+          };
+        });
+      });
     }
   }
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
 
     // Watch player changes — realtime fast path (fires instantly when RLS allows)
     const playersChannel = supabase
@@ -432,11 +434,11 @@ export function GameSession({
           event: "*",
           schema: "public",
           table: "game_players",
-          filter: `game_id=eq.${game.id}`
+          filter: `game_id=eq.${game.id}`,
         },
-        () => fetchAll()
+        () => fetchAll(),
       )
-      .subscribe()
+      .subscribe();
 
     // Watch game status changes — realtime fast path
     const gameChannel = supabase
@@ -447,77 +449,77 @@ export function GameSession({
           event: "UPDATE",
           schema: "public",
           table: "games",
-          filter: `id=eq.${game.id}`
+          filter: `id=eq.${game.id}`,
         },
-        () => fetchAll()
+        () => fetchAll(),
       )
-      .subscribe()
+      .subscribe();
 
     // Polling fallback — reduced to 10s for better performance
-    const pollInterval = setInterval(() => fetchAll(), 10000)
+    const pollInterval = setInterval(() => fetchAll(), 10000);
 
     return () => {
-      supabase.removeChannel(playersChannel)
-      supabase.removeChannel(gameChannel)
-      clearInterval(pollInterval)
-    }
+      supabase.removeChannel(playersChannel);
+      supabase.removeChannel(gameChannel);
+      clearInterval(pollInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.id])
+  }, [game.id]);
 
   const gameForPayout = useMemo((): GameSchema | null => {
     const allGamePlayers = [
       ...approved,
-      ...guests.filter((g) => g.cash_in !== null || g.cash_out !== null)
-    ]
-    if (allGamePlayers.length < 2) return null
+      ...guests.filter((g) => g.cash_in !== null || g.cash_out !== null),
+    ];
+    if (allGamePlayers.length < 2) return null;
 
-    const names = new Set<string>()
+    const names = new Set<string>();
     const makeName = (p: PlayerRow | GuestPlayer) => {
-      let base: string
+      let base: string;
       if ("venmo_handle" in p) {
         // Regular player
         base = p.venmo_handle
           ? `@${p.venmo_handle}`
-          : p.display_name || `Player_${p.user_id.slice(0, 8)}`
+          : p.display_name || `Player_${p.user_id.slice(0, 8)}`;
       } else {
         // Guest player
-        base = `${p.name} (guest)`
+        base = `${p.name} (guest)`;
       }
 
-      let name = base
-      let n = 0
+      let name = base;
+      let n = 0;
       while (names.has(name)) {
-        name = `${base}_${++n}`
+        name = `${base}_${++n}`;
       }
-      names.add(name)
-      return name
-    }
+      names.add(name);
+      return name;
+    };
 
     const players = [
       ...approved.map((p) => ({
         name: makeName(p),
         cashIn: p.cash_in ?? 0,
-        cashOut: p.cash_out ?? 0
+        cashOut: p.cash_out ?? 0,
       })),
       ...guests
         .filter((g) => g.cash_in !== null || g.cash_out !== null)
         .map((g) => ({
           name: makeName(g),
           cashIn: g.cash_in ?? 0,
-          cashOut: g.cash_out ?? 0
-        }))
-    ]
+          cashOut: g.cash_out ?? 0,
+        })),
+    ];
 
     return {
       description: game.description || undefined,
-      players
-    }
-  }, [approved, guests, game.description])
+      players,
+    };
+  }, [approved, guests, game.description]);
 
   const payout = useMemo(
     () => (gameForPayout ? calcPayouts(gameForPayout) : null),
-    [gameForPayout]
-  )
+    [gameForPayout],
+  );
 
   async function updatePlayerFields(
     gameId: string,
@@ -531,61 +533,61 @@ export function GameSession({
         | "requested_cash_out"
         | "status"
       >
-    >
+    >,
   ) {
-    setUpdating(userId)
-    const supabase = createClient()
+    setUpdating(userId);
+    const supabase = createClient();
     await supabase
       .from("game_players")
       .update(patch)
       .eq("game_id", gameId)
-      .eq("user_id", userId)
+      .eq("user_id", userId);
     setPlayers((prev) =>
-      prev.map((p) => (p.user_id === userId ? { ...p, ...patch } : p))
-    )
-    setUpdating(null)
+      prev.map((p) => (p.user_id === userId ? { ...p, ...patch } : p)),
+    );
+    setUpdating(null);
   }
 
   async function updateCash(
     gameId: string,
     userId: string,
     cash_in: number | null,
-    cash_out: number | null
+    cash_out: number | null,
   ) {
     await updatePlayerFields(gameId, userId, {
       cash_in,
       cash_out,
       requested_cash_in: cash_in,
-      requested_cash_out: cash_out
-    })
+      requested_cash_out: cash_out,
+    });
   }
 
   async function updateRequestedCash(
     gameId: string,
     userId: string,
     requested_cash_in: number | null,
-    requested_cash_out: number | null
+    requested_cash_out: number | null,
   ) {
     await updatePlayerFields(gameId, userId, {
       requested_cash_in,
-      requested_cash_out
-    })
+      requested_cash_out,
+    });
   }
 
   async function setStatus(
     gameId: string,
     userId: string,
-    status: "approved" | "denied"
+    status: "approved" | "denied",
   ) {
-    await updatePlayerFields(gameId, userId, { status })
+    await updatePlayerFields(gameId, userId, { status });
   }
 
   async function handleToggleClose() {
-    setTogglingClose(true)
+    setTogglingClose(true);
     try {
-      const newStatus = isClosed ? "active" : "closed"
-      await setGameStatus(game.id, newStatus)
-      setGameStatus_(newStatus)
+      const newStatus = isClosed ? "active" : "closed";
+      await setGameStatus(game.id, newStatus);
+      setGameStatus_(newStatus);
 
       // When reopening: zero out all player amounts locally so the UI starts fresh
       if (newStatus === "active") {
@@ -595,23 +597,23 @@ export function GameSession({
             cash_in: 0,
             cash_out: 0,
             requested_cash_in: 0,
-            requested_cash_out: 0
-          }))
-        )
+            requested_cash_out: 0,
+          })),
+        );
 
         // Force a fresh fetch after a short delay to ensure server changes are applied
         setTimeout(() => {
-          fetchAll()
-        }, 500)
+          fetchAll();
+        }, 500);
       }
 
       toast.success(
-        isClosed ? "Session reopened" : "Session closed — edits are locked"
-      )
+        isClosed ? "Session reopened" : "Session closed — edits are locked",
+      );
     } catch (e) {
-      toast.error((e as Error).message)
+      toast.error((e as Error).message);
     } finally {
-      setTogglingClose(false)
+      setTogglingClose(false);
     }
   }
 
@@ -623,24 +625,26 @@ export function GameSession({
         guests.filter((g) => g.cash_in !== null || g.cash_out !== null).length <
         2
     )
-      return
-    setEnding(true)
+      return;
+    setEnding(true);
     try {
-      await closeGame(game.id)
-      toast.success("Game ended. Profits and debts updated.")
-      router.push("/dashboard")
-      router.refresh()
+      await closeGame(game.id);
+      toast.success("Game ended. Profits and debts updated.");
+      router.push("/dashboard");
+      router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to end game")
-      setEnding(false)
+      toast.error(
+        error instanceof Error ? error.message : "Failed to end game",
+      );
+      setEnding(false);
     }
   }
 
   function copyGameLink() {
-    navigator.clipboard.writeText(inviteUrl)
-    setCopyFeedback("Invite link copied")
-    window.setTimeout(() => setCopyFeedback(""), 2000)
-    toast.success("Link copied")
+    navigator.clipboard.writeText(inviteUrl);
+    setCopyFeedback("Invite link copied");
+    window.setTimeout(() => setCopyFeedback(""), 2000);
+    toast.success("Link copied");
   }
 
   if (game.status === "ended") {
@@ -653,7 +657,7 @@ export function GameSession({
           </Button>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -732,7 +736,7 @@ export function GameSession({
                         cash_in: p.requested_cash_in,
                         requested_cash_in: p.requested_cash_in,
                         cash_out: p.requested_cash_out,
-                        requested_cash_out: p.requested_cash_out
+                        requested_cash_out: p.requested_cash_out,
                       })
                     }
                   >
@@ -796,8 +800,8 @@ export function GameSession({
                       className="cursor-pointer rounded-sm text-left underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       aria-label={`Open actions for ${playerName(p)}`}
                       onClick={() => {
-                        setSelectedPlayer(p)
-                        setTransferConfirm(false)
+                        setSelectedPlayer(p);
+                        setTransferConfirm(false);
                       }}
                     >
                       {playerName(p)}
@@ -836,22 +840,22 @@ export function GameSession({
                               setFieldEditing(`host-${p.user_id}-cash_in`, true)
                             }
                             onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setPlayers((prev) =>
                                 prev.map((x) =>
                                   x.user_id === p.user_id
                                     ? { ...x, cash_in: v }
-                                    : x
-                                )
-                              )
+                                    : x,
+                                ),
+                              );
                             }}
                             onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setFieldEditing(
                                 `host-${p.user_id}-cash_in`,
-                                false
-                              )
-                              updateCash(game.id, p.user_id, v, p.cash_out)
+                                false,
+                              );
+                              updateCash(game.id, p.user_id, v, p.cash_out);
                             }}
                             disabled={isClosed}
                           />
@@ -868,26 +872,26 @@ export function GameSession({
                             onFocus={() =>
                               setFieldEditing(
                                 `host-${p.user_id}-cash_out`,
-                                true
+                                true,
                               )
                             }
                             onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setPlayers((prev) =>
                                 prev.map((x) =>
                                   x.user_id === p.user_id
                                     ? { ...x, cash_out: v }
-                                    : x
-                                )
-                              )
+                                    : x,
+                                ),
+                              );
                             }}
                             onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setFieldEditing(
                                 `host-${p.user_id}-cash_out`,
-                                false
-                              )
-                              updateCash(game.id, p.user_id, p.cash_in, v)
+                                false,
+                              );
+                              updateCash(game.id, p.user_id, p.cash_in, v);
                             }}
                             disabled={isClosed}
                           />
@@ -910,7 +914,8 @@ export function GameSession({
                                       onClick={() =>
                                         updatePlayerFields(game.id, p.user_id, {
                                           cash_in: p.requested_cash_in,
-                                          requested_cash_in: p.requested_cash_in
+                                          requested_cash_in:
+                                            p.requested_cash_in,
                                         })
                                       }
                                     >
@@ -923,7 +928,7 @@ export function GameSession({
                                       disabled={updating === p.user_id}
                                       onClick={() =>
                                         updatePlayerFields(game.id, p.user_id, {
-                                          requested_cash_in: p.cash_in
+                                          requested_cash_in: p.cash_in,
                                         })
                                       }
                                     >
@@ -948,7 +953,7 @@ export function GameSession({
                                         updatePlayerFields(game.id, p.user_id, {
                                           cash_out: p.requested_cash_out,
                                           requested_cash_out:
-                                            p.requested_cash_out
+                                            p.requested_cash_out,
                                         })
                                       }
                                     >
@@ -961,7 +966,7 @@ export function GameSession({
                                       disabled={updating === p.user_id}
                                       onClick={() =>
                                         updatePlayerFields(game.id, p.user_id, {
-                                          requested_cash_out: p.cash_out
+                                          requested_cash_out: p.cash_out,
                                         })
                                       }
                                     >
@@ -994,31 +999,31 @@ export function GameSession({
                             onFocus={() =>
                               setFieldEditing(
                                 `self-${p.user_id}-requested_cash_in`,
-                                true
+                                true,
                               )
                             }
                             onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setPlayers((prev) =>
                                 prev.map((x) =>
                                   x.user_id === p.user_id
                                     ? { ...x, requested_cash_in: v }
-                                    : x
-                                )
-                              )
+                                    : x,
+                                ),
+                              );
                             }}
                             onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setFieldEditing(
                                 `self-${p.user_id}-requested_cash_in`,
-                                false
-                              )
+                                false,
+                              );
                               updateRequestedCash(
                                 game.id,
                                 p.user_id,
                                 v,
-                                p.requested_cash_out
-                              )
+                                p.requested_cash_out,
+                              );
                             }}
                           />
                           <Input
@@ -1035,31 +1040,31 @@ export function GameSession({
                             onFocus={() =>
                               setFieldEditing(
                                 `self-${p.user_id}-requested_cash_out`,
-                                true
+                                true,
                               )
                             }
                             onChange={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setPlayers((prev) =>
                                 prev.map((x) =>
                                   x.user_id === p.user_id
                                     ? { ...x, requested_cash_out: v }
-                                    : x
-                                )
-                              )
+                                    : x,
+                                ),
+                              );
                             }}
                             onBlur={(e) => {
-                              const v = parseCashInput(e.target.value)
+                              const v = parseCashInput(e.target.value);
                               setFieldEditing(
                                 `self-${p.user_id}-requested_cash_out`,
-                                false
-                              )
+                                false,
+                              );
                               updateRequestedCash(
                                 game.id,
                                 p.user_id,
                                 p.requested_cash_in,
-                                v
-                              )
+                                v,
+                              );
                             }}
                           />
                         </div>
@@ -1108,36 +1113,36 @@ export function GameSession({
                           onFocus={() =>
                             setFieldEditing(
                               `pending-${p.user_id}-requested_cash_in`,
-                              true
+                              true,
                             )
                           }
                           onChange={(e) => {
                             const v =
                               e.target.value === ""
                                 ? null
-                                : parseFloat(e.target.value) || null
+                                : parseFloat(e.target.value) || null;
                             setPlayers((prev) =>
                               prev.map((x) =>
                                 x.user_id === p.user_id
                                   ? { ...x, requested_cash_in: v }
-                                  : x
-                              )
-                            )
+                                  : x,
+                              ),
+                            );
                           }}
                           onBlur={(e) => {
                             const v =
                               e.target.value === ""
                                 ? null
-                                : parseFloat(e.target.value) || null
+                                : parseFloat(e.target.value) || null;
                             setFieldEditing(
                               `pending-${p.user_id}-requested_cash_in`,
-                              false
-                            )
+                              false,
+                            );
                             updateRequestedAmounts(
                               game.id,
                               v ?? 0,
-                              p.requested_cash_out ?? 0
-                            ).catch(() => toast.error("Failed to save"))
+                              p.requested_cash_out ?? 0,
+                            ).catch(() => toast.error("Failed to save"));
                           }}
                         />
                         <Input
@@ -1154,36 +1159,36 @@ export function GameSession({
                           onFocus={() =>
                             setFieldEditing(
                               `pending-${p.user_id}-requested_cash_out`,
-                              true
+                              true,
                             )
                           }
                           onChange={(e) => {
                             const v =
                               e.target.value === ""
                                 ? null
-                                : parseFloat(e.target.value) || null
+                                : parseFloat(e.target.value) || null;
                             setPlayers((prev) =>
                               prev.map((x) =>
                                 x.user_id === p.user_id
                                   ? { ...x, requested_cash_out: v }
-                                  : x
-                              )
-                            )
+                                  : x,
+                              ),
+                            );
                           }}
                           onBlur={(e) => {
                             const v =
                               e.target.value === ""
                                 ? null
-                                : parseFloat(e.target.value) || null
+                                : parseFloat(e.target.value) || null;
                             setFieldEditing(
                               `pending-${p.user_id}-requested_cash_out`,
-                              false
-                            )
+                              false,
+                            );
                             updateRequestedAmounts(
                               game.id,
                               p.requested_cash_in ?? 0,
-                              v ?? 0
-                            ).catch(() => toast.error("Failed to save"))
+                              v ?? 0,
+                            ).catch(() => toast.error("Failed to save"));
                           }}
                         />
                       </div>
@@ -1206,24 +1211,24 @@ export function GameSession({
                         variant="outline"
                         disabled={updating === p.user_id}
                         onClick={async () => {
-                          setUpdating(p.user_id)
+                          setUpdating(p.user_id);
                           try {
-                            await requestRejoin(game.id)
+                            await requestRejoin(game.id);
                             // Optimistically flip to pending in local state
                             setPlayers((prev) =>
                               prev.map((x) =>
                                 x.user_id === p.user_id
                                   ? { ...x, status: "pending" }
-                                  : x
-                              )
-                            )
+                                  : x,
+                              ),
+                            );
                             toast.success(
-                              "Rejoin request sent — waiting for host approval"
-                            )
+                              "Rejoin request sent — waiting for host approval",
+                            );
                           } catch {
-                            toast.error("Failed to send rejoin request")
+                            toast.error("Failed to send rejoin request");
                           } finally {
-                            setUpdating(null)
+                            setUpdating(null);
                           }
                         }}
                       >
@@ -1252,10 +1257,10 @@ export function GameSession({
                     onClick={() => {
                       if (p.status === "denied") {
                         updatePlayerFields(game.id, p.user_id, {
-                          status: "approved"
-                        })
+                          status: "approved",
+                        });
                       } else {
-                        handleKick(p.user_id)
+                        handleKick(p.user_id);
                       }
                     }}
                   >
@@ -1301,17 +1306,17 @@ export function GameSession({
                         setFieldEditing(`guest-${guest.id}-cash_in`, true)
                       }
                       onChange={(e) => {
-                        const v = parseCashInput(e.target.value)
+                        const v = parseCashInput(e.target.value);
                         setGuests((prev) =>
                           prev.map((g) =>
-                            g.id === guest.id ? { ...g, cash_in: v } : g
-                          )
-                        )
+                            g.id === guest.id ? { ...g, cash_in: v } : g,
+                          ),
+                        );
                       }}
                       onBlur={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setFieldEditing(`guest-${guest.id}-cash_in`, false)
-                        void updateGuestDb(guest.id, { cash_in: v })
+                        const v = parseCashInput(e.target.value);
+                        setFieldEditing(`guest-${guest.id}-cash_in`, false);
+                        void updateGuestDb(guest.id, { cash_in: v });
                       }}
                       disabled={isClosed}
                     />
@@ -1329,17 +1334,17 @@ export function GameSession({
                         setFieldEditing(`guest-${guest.id}-cash_out`, true)
                       }
                       onChange={(e) => {
-                        const v = parseCashInput(e.target.value)
+                        const v = parseCashInput(e.target.value);
                         setGuests((prev) =>
                           prev.map((g) =>
-                            g.id === guest.id ? { ...g, cash_out: v } : g
-                          )
-                        )
+                            g.id === guest.id ? { ...g, cash_out: v } : g,
+                          ),
+                        );
                       }}
                       onBlur={(e) => {
-                        const v = parseCashInput(e.target.value)
-                        setFieldEditing(`guest-${guest.id}-cash_out`, false)
-                        void updateGuestDb(guest.id, { cash_out: v })
+                        const v = parseCashInput(e.target.value);
+                        setFieldEditing(`guest-${guest.id}-cash_out`, false);
+                        void updateGuestDb(guest.id, { cash_out: v });
                       }}
                       disabled={isClosed}
                     />
@@ -1381,7 +1386,7 @@ export function GameSession({
                     onChange={(e) =>
                       setGuestForm((prev) => ({
                         ...prev,
-                        cash_in: e.target.value
+                        cash_in: e.target.value,
                       }))
                     }
                   />
@@ -1394,7 +1399,7 @@ export function GameSession({
                     onChange={(e) =>
                       setGuestForm((prev) => ({
                         ...prev,
-                        cash_out: e.target.value
+                        cash_out: e.target.value,
                       }))
                     }
                   />
@@ -1434,8 +1439,8 @@ export function GameSession({
         open={!!selectedPlayer}
         onOpenChange={(open) => {
           if (!open && !transferring) {
-            setSelectedPlayer(null)
-            setTransferConfirm(false)
+            setSelectedPlayer(null);
+            setTransferConfirm(false);
           }
         }}
       >
@@ -1514,8 +1519,8 @@ export function GameSession({
                 size="sm"
                 className="w-full text-muted-foreground"
                 onClick={() => {
-                  setSelectedPlayer(null)
-                  setTransferConfirm(false)
+                  setSelectedPlayer(null);
+                  setTransferConfirm(false);
                 }}
               >
                 Close
@@ -1525,5 +1530,5 @@ export function GameSession({
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

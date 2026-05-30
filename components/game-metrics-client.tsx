@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -14,25 +14,25 @@ import {
   BarChart,
   Bar,
   Cell,
-  ReferenceLine
-} from "recharts"
+  ReferenceLine,
+} from "recharts";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { PayoutStatsView } from "./payout-stats-view"
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { PayoutStatsView } from "./payout-stats-view";
 import {
   TrendingUp,
   TrendingDown,
@@ -42,11 +42,11 @@ import {
   ArrowLeft,
   X,
   Trash2,
-  Loader2
-} from "lucide-react"
-import { formatDollar, calcPayouts } from "@/lib/utils"
-import type { GameSchema } from "@/lib/schemas"
-import { deleteSessionAt } from "@/lib/actions"
+  Loader2,
+} from "lucide-react";
+import { formatDollar, calcPayouts } from "@/lib/utils";
+import type { GameSchema } from "@/lib/schemas";
+import { deleteSessionAt } from "@/lib/actions";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -55,37 +55,37 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type SessionPlayer = {
-  user_id: string
-  display_name: string | null
-  venmo_handle: string | null
-  game_net: number
-  cash_in: number
-  cash_out: number
-  session_net: number
-  is_me: boolean
-  was_kicked: boolean
-}
+  user_id: string;
+  display_name: string | null;
+  venmo_handle: string | null;
+  game_net: number;
+  cash_in: number;
+  cash_out: number;
+  session_net: number;
+  is_me: boolean;
+  was_kicked: boolean;
+};
 
 type StandingsPlayer = {
-  user_id: string
-  display_name: string | null
-  venmo_handle: string | null
-  game_net: number
-  is_me: boolean
-  was_kicked: boolean
-}
+  user_id: string;
+  display_name: string | null;
+  venmo_handle: string | null;
+  game_net: number;
+  is_me: boolean;
+  was_kicked: boolean;
+};
 
-type SessionChartPoint = { label: string; date: string; net: number }
+type SessionChartPoint = { label: string; date: string; net: number };
 
 type SessionHistoryEntry = {
-  snapshotted_at: string
-  label: string
-  players: { name: string; cashIn: number; cashOut: number }[]
-}
+  snapshotted_at: string;
+  label: string;
+  players: { name: string; cashIn: number; cashOut: number }[];
+};
 
 const TOOLTIP_STYLE = {
   contentStyle: {
@@ -94,37 +94,37 @@ const TOOLTIP_STYLE = {
     borderRadius: "10px",
     color: "var(--foreground)",
     fontSize: 13,
-    boxShadow: "0 4px 24px oklch(0 0 0 / 0.25)"
+    boxShadow: "0 4px 24px oklch(0 0 0 / 0.25)",
   },
   itemStyle: { color: "var(--muted-foreground)" },
-  labelStyle: { color: "var(--foreground)", fontWeight: 600, marginBottom: 2 }
-}
+  labelStyle: { color: "var(--foreground)", fontWeight: 600, marginBottom: 2 },
+};
 
-const TICK = { fontSize: 11, fill: "var(--muted-foreground)" }
+const TICK = { fontSize: 11, fill: "var(--muted-foreground)" };
 
 function HostDeleteSessionButton({
   gameId,
   snapshottedAt,
-  onDeleted
+  onDeleted,
 }: {
-  gameId: string
-  snapshottedAt: string
-  onDeleted: () => void
+  gameId: string;
+  snapshottedAt: string;
+  onDeleted: () => void;
 }) {
-  const [open, setOpen] = useState(false)
-  const [pending, setPending] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   async function handleConfirm() {
-    setPending(true)
+    setPending(true);
     try {
-      await deleteSessionAt(gameId, snapshottedAt)
-      toast.success("Session removed from history")
-      setOpen(false)
-      onDeleted()
+      await deleteSessionAt(gameId, snapshottedAt);
+      toast.success("Session removed from history");
+      setOpen(false);
+      onDeleted();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete session")
+      toast.error(e instanceof Error ? e.message : "Failed to delete session");
     } finally {
-      setPending(false)
+      setPending(false);
     }
   }
 
@@ -132,7 +132,7 @@ function HostDeleteSessionButton({
     <AlertDialog
       open={open}
       onOpenChange={(next) => {
-        if (!pending) setOpen(next)
+        if (!pending) setOpen(next);
       }}
     >
       <AlertDialogTrigger asChild>
@@ -168,57 +168,57 @@ function HostDeleteSessionButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
 function yDomain(data: { net: number }[]): [number, number] {
-  if (!data.length) return [-10, 10]
-  const vals = data.map((d) => d.net)
-  const max = Math.max(...vals, 0)
-  const min = Math.min(...vals, 0)
-  const range = max - min || 1
-  const pad = range * 0.2
-  return [Math.floor(min - pad), Math.ceil(max + pad)]
+  if (!data.length) return [-10, 10];
+  const vals = data.map((d) => d.net);
+  const max = Math.max(...vals, 0);
+  const min = Math.min(...vals, 0);
+  const range = max - min || 1;
+  const pad = range * 0.2;
+  return [Math.floor(min - pad), Math.ceil(max + pad)];
 }
 
 function NetBadge({ value }: { value: number }) {
-  const status = value > 0.01 ? "profit" : value < -0.01 ? "loss" : "even"
+  const status = value > 0.01 ? "profit" : value < -0.01 ? "loss" : "even";
   if (value > 0.01)
     return (
       <span className="flex items-center gap-1 text-emerald-700 font-semibold tabular-nums dark:text-emerald-300">
         <TrendingUp className="h-3.5 w-3.5" />
         {formatDollar(value)} <span className="sr-only">{status}</span>
       </span>
-    )
+    );
   if (value < -0.01)
     return (
       <span className="flex items-center gap-1 text-red-600 font-semibold tabular-nums dark:text-red-300">
         <TrendingDown className="h-3.5 w-3.5" />
         {formatDollar(value)} <span className="sr-only">{status}</span>
       </span>
-    )
+    );
   return (
     <span className="flex items-center gap-1 text-muted-foreground font-semibold">
       <Minus className="h-3.5 w-3.5" />
       $0 <span className="sr-only">{status}</span>
     </span>
-  )
+  );
 }
 
 function netStatus(value: number) {
-  if (value > 0.01) return "profit"
-  if (value < -0.01) return "loss"
-  return "even"
+  if (value > 0.01) return "profit";
+  if (value < -0.01) return "loss";
+  return "even";
 }
 
 function ChartSummary({
   title,
-  items
+  items,
 }: {
-  title: string
-  items: { name: string; value: number }[]
+  title: string;
+  items: { name: string; value: number }[];
 }) {
-  if (!items.length) return null
+  if (!items.length) return null;
 
   return (
     <div className="sr-only">
@@ -231,26 +231,26 @@ function ChartSummary({
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
 function PlayerBarChart({
   data,
-  tooltipLabel
+  tooltipLabel,
 }: {
-  data: { name: string; net: number; isMe: boolean }[]
-  tooltipLabel: string
+  data: { name: string; net: number; isMe: boolean }[];
+  tooltipLabel: string;
 }) {
-  const allZero = data.every((d) => Math.abs(d.net) < 0.01)
+  const allZero = data.every((d) => Math.abs(d.net) < 0.01);
   if (allZero) {
     return (
       <p className="text-muted-foreground text-sm text-center py-6">
         No data yet — this updates when games are ended.
       </p>
-    )
+    );
   }
-  const domain = yDomain(data)
-  const barWidth = data.length <= 4 ? 48 : data.length <= 8 ? 36 : 24
+  const domain = yDomain(data);
+  const barWidth = data.length <= 4 ? 48 : data.length <= 8 ? 36 : 24;
   return (
     <div className="h-[280px] w-full">
       <ChartSummary
@@ -312,7 +312,7 @@ function PlayerBarChart({
         </BarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 function SessionHistoryModal({
@@ -320,45 +320,45 @@ function SessionHistoryModal({
   isHost,
   sessions,
   onClose,
-  afterSessionDeleted
+  afterSessionDeleted,
 }: {
-  gameId: string
-  isHost: boolean
-  sessions: SessionHistoryEntry[]
-  onClose: () => void
-  afterSessionDeleted: () => void
+  gameId: string;
+  isHost: boolean;
+  sessions: SessionHistoryEntry[];
+  onClose: () => void;
+  afterSessionDeleted: () => void;
 }) {
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState("");
   const [selectedSession, setSelectedSession] =
-    useState<SessionHistoryEntry | null>(null)
+    useState<SessionHistoryEntry | null>(null);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return sessions
-    const q = search.toLowerCase()
+    if (!search.trim()) return sessions;
+    const q = search.toLowerCase();
     return sessions.filter(
       (s) =>
         s.label.toLowerCase().includes(q) ||
-        s.players.some((p) => p.name.toLowerCase().includes(q))
-    )
-  }, [sessions, search])
+        s.players.some((p) => p.name.toLowerCase().includes(q)),
+    );
+  }, [sessions, search]);
 
   const selectedPayout = useMemo(() => {
-    if (!selectedSession || selectedSession.players.length < 2) return null
+    if (!selectedSession || selectedSession.players.length < 2) return null;
     const gameData: GameSchema = {
       players: selectedSession.players.map((p) => ({
         name: p.name,
         cashIn: p.cashIn,
-        cashOut: p.cashOut
-      }))
-    }
-    return calcPayouts(gameData)
-  }, [selectedSession])
+        cashOut: p.cashOut,
+      })),
+    };
+    return calcPayouts(gameData);
+  }, [selectedSession]);
 
   return (
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open) onClose();
       }}
     >
       <DialogContent
@@ -390,8 +390,8 @@ function SessionHistoryModal({
                   gameId={gameId}
                   snapshottedAt={selectedSession.snapshotted_at}
                   onDeleted={() => {
-                    setSelectedSession(null)
-                    afterSessionDeleted()
+                    setSelectedSession(null);
+                    afterSessionDeleted();
                   }}
                 />
               )}
@@ -457,13 +457,13 @@ function SessionHistoryModal({
                   {[...filtered].reverse().map((session) => {
                     const totalIn = session.players.reduce(
                       (s, p) => s + p.cashIn,
-                      0
-                    )
+                      0,
+                    );
                     const totalOut = session.players.reduce(
                       (s, p) => s + p.cashOut,
-                      0
-                    )
-                    const pot = totalIn + totalOut
+                      0,
+                    );
+                    const pot = totalIn + totalOut;
 
                     return (
                       <div
@@ -520,15 +520,15 @@ function SessionHistoryModal({
                                 setSelectedSession((s) =>
                                   s?.snapshotted_at === session.snapshotted_at
                                     ? null
-                                    : s
-                                )
-                                afterSessionDeleted()
+                                    : s,
+                                );
+                                afterSessionDeleted();
                               }}
                             />
                           </div>
                         )}
                       </div>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -537,7 +537,7 @@ function SessionHistoryModal({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 export function GameMetricsClient({
@@ -548,39 +548,39 @@ export function GameMetricsClient({
   sessionChartPoints,
   cumulativeChartPoints,
   sessionHistory,
-  currentUserId
+  currentUserId,
 }: {
-  gameId: string
-  isHost: boolean
-  sessionPlayers: SessionPlayer[]
-  standingsPlayers: StandingsPlayer[]
-  sessionChartPoints: SessionChartPoint[]
-  cumulativeChartPoints: SessionChartPoint[]
-  sessionHistory: SessionHistoryEntry[]
-  currentUserId: string
+  gameId: string;
+  isHost: boolean;
+  sessionPlayers: SessionPlayer[];
+  standingsPlayers: StandingsPlayer[];
+  sessionChartPoints: SessionChartPoint[];
+  cumulativeChartPoints: SessionChartPoint[];
+  sessionHistory: SessionHistoryEntry[];
+  currentUserId: string;
 }) {
-  const router = useRouter()
-  const [historyOpen, setHistoryOpen] = useState(false)
-  const me = sessionPlayers.find((p) => p.user_id === currentUserId)
+  const router = useRouter();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const me = sessionPlayers.find((p) => p.user_id === currentUserId);
 
   const sessionBarData = sessionPlayers.map((p) => ({
     name: p.display_name || p.venmo_handle || p.user_id.slice(0, 8),
     net: p.session_net,
-    isMe: p.user_id === currentUserId
-  }))
+    isMe: p.user_id === currentUserId,
+  }));
 
   const allTimeBarData = standingsPlayers.map((p) => ({
     name: p.display_name || p.venmo_handle || p.user_id.slice(0, 8),
     net: p.game_net,
-    isMe: p.user_id === currentUserId
-  }))
+    isMe: p.user_id === currentUserId,
+  }));
 
-  const sessionDomain = yDomain(sessionChartPoints)
-  const cumDomain = yDomain(cumulativeChartPoints)
+  const sessionDomain = yDomain(sessionChartPoints);
+  const cumDomain = yDomain(cumulativeChartPoints);
 
   const finalCumNet =
-    cumulativeChartPoints[cumulativeChartPoints.length - 1]?.net ?? 0
-  const lineColor = finalCumNet >= 0 ? "#22c55e" : "#ef4444"
+    cumulativeChartPoints[cumulativeChartPoints.length - 1]?.net ?? 0;
+  const lineColor = finalCumNet >= 0 ? "#22c55e" : "#ef4444";
 
   return (
     <div className="space-y-5">
@@ -605,7 +605,7 @@ export function GameMetricsClient({
             { label: "Session In", value: me.cash_in, neutral: true },
             { label: "Session Out", value: me.cash_out, neutral: true },
             { label: "Session Net", value: me.session_net },
-            { label: "Game Net", value: me.game_net }
+            { label: "Game Net", value: me.game_net },
           ].map(({ label, value, neutral }) => (
             <Card
               key={label}
@@ -673,7 +673,7 @@ export function GameMetricsClient({
                 title="Your profit per session"
                 items={sessionChartPoints.map((point) => ({
                   name: point.date,
-                  value: point.net
+                  value: point.net,
                 }))}
               />
               <ResponsiveContainer width="100%" height="100%">
@@ -713,13 +713,13 @@ export function GameMetricsClient({
                   <Tooltip
                     formatter={(value: number) => [
                       formatDollar(value),
-                      "Session Net"
+                      "Session Net",
                     ]}
                     labelFormatter={(label, payload) => {
                       const pt = payload?.[0]?.payload as
                         | SessionChartPoint
-                        | undefined
-                      return pt ? pt.date : label
+                        | undefined;
+                      return pt ? pt.date : label;
                     }}
                     cursor={{ fill: "oklch(0.5 0 0 / 0.1)", radius: 6 }}
                     {...TOOLTIP_STYLE}
@@ -766,7 +766,7 @@ export function GameMetricsClient({
                 title="Cumulative profit this game"
                 items={cumulativeChartPoints.map((point) => ({
                   name: point.date,
-                  value: point.net
+                  value: point.net,
                 }))}
               />
               <ResponsiveContainer width="100%" height="100%">
@@ -798,17 +798,17 @@ export function GameMetricsClient({
                   <Tooltip
                     formatter={(value: number) => [
                       formatDollar(value),
-                      "Cumulative Net"
+                      "Cumulative Net",
                     ]}
                     labelFormatter={(label, payload) => {
                       const pt = payload?.[0]?.payload as
                         | SessionChartPoint
-                        | undefined
-                      return pt ? pt.date : label
+                        | undefined;
+                      return pt ? pt.date : label;
                     }}
                     cursor={{
                       stroke: "var(--muted-foreground)",
-                      strokeWidth: 1.5
+                      strokeWidth: 1.5,
                     }}
                     {...TOOLTIP_STYLE}
                   />
@@ -825,8 +825,8 @@ export function GameMetricsClient({
                     strokeWidth={2.5}
                     dot={(props) => {
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const { cx, cy, payload } = props as any
-                      const c = (payload.net ?? 0) >= 0 ? "#22c55e" : "#ef4444"
+                      const { cx, cy, payload } = props as any;
+                      const c = (payload.net ?? 0) >= 0 ? "#22c55e" : "#ef4444";
                       return (
                         <circle
                           key={payload.label}
@@ -837,13 +837,13 @@ export function GameMetricsClient({
                           stroke="var(--background)"
                           strokeWidth={2}
                         />
-                      )
+                      );
                     }}
                     activeDot={{
                       r: 8,
                       fill: lineColor,
                       stroke: "var(--background)",
-                      strokeWidth: 2
+                      strokeWidth: 2,
                     }}
                   />
                 </LineChart>
@@ -921,5 +921,5 @@ export function GameMetricsClient({
         />
       )}
     </div>
-  )
+  );
 }

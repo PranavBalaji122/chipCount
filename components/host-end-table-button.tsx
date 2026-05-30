@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
-import { closeGame } from "@/lib/actions"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { closeGame } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,39 +12,39 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function HostEndTableButton({
   gameId,
-  tableName
+  tableName,
 }: {
-  gameId: string
-  tableName: string
+  gameId: string;
+  tableName: string;
 }) {
-  const [open, setOpen] = useState(false)
-  const [pending, setPending] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
 
   async function handleConfirm() {
-    setPending(true)
+    setPending(true);
     try {
-      await closeGame(gameId)
-      setOpen(false)
+      await closeGame(gameId);
+      setOpen(false);
     } catch {
       // closeGame currently swallows most errors; keep dialog open on failure
     } finally {
-      setPending(false)
+      setPending(false);
     }
   }
 
-  const name = tableName.trim()
-  const nameSuffix = name ? ` (${name})` : ""
+  const name = tableName.trim();
+  const nameSuffix = name ? ` (${name})` : "";
 
   return (
     <AlertDialog
       open={open}
       onOpenChange={(next) => {
-        if (!pending) setOpen(next)
+        if (!pending) setOpen(next);
       }}
     >
       <AlertDialogTrigger asChild>
@@ -57,8 +57,8 @@ export function HostEndTableButton({
           <AlertDialogTitle>End this table?</AlertDialogTitle>
           <AlertDialogDescription>
             Are you sure you want to end this table?
-            {nameSuffix} This ends the game for everyone and removes it from
-            the dashboard. This cannot be undone.
+            {nameSuffix} This ends the game for everyone and removes it from the
+            dashboard. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -74,5 +74,5 @@ export function HostEndTableButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

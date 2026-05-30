@@ -1,42 +1,48 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function JoinRequestForm({
   gameId,
-  gameDescription
+  gameDescription,
 }: {
-  gameId: string
-  gameDescription?: string
+  gameId: string;
+  gameDescription?: string;
 }) {
-  const router = useRouter()
-  const [buyIn, setBuyIn] = useState<string>("")
-  const [submitting, setSubmitting] = useState(false)
+  const router = useRouter();
+  const [buyIn, setBuyIn] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const inVal = parseFloat(buyIn)
+    e.preventDefault();
+    const inVal = parseFloat(buyIn);
     if (Number.isNaN(inVal) || inVal < 0) {
-      toast.error("Enter a valid buy-in amount (0 or more).")
-      return
+      toast.error("Enter a valid buy-in amount (0 or more).");
+      return;
     }
-    setSubmitting(true)
-    const supabase = createClient()
+    setSubmitting(true);
+    const supabase = createClient();
     const {
-      data: { user }
-    } = await supabase.auth.getUser()
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      toast.error("You must be logged in to join.")
-      setSubmitting(false)
-      return
+      toast.error("You must be logged in to join.");
+      setSubmitting(false);
+      return;
     }
 
     const { error } = await supabase.from("game_players").insert({
@@ -44,23 +50,23 @@ export function JoinRequestForm({
       user_id: user.id,
       status: "pending",
       requested_cash_in: inVal,
-      requested_cash_out: 0
-    })
+      requested_cash_out: 0,
+    });
 
     if (error) {
       if (error.code === "23505") {
-        toast.info("You're already in this game.")
-        router.push(`/game/${gameId}`)
-        return
+        toast.info("You're already in this game.");
+        router.push(`/game/${gameId}`);
+        return;
       }
-      toast.error(error.message || "Failed to send join request.")
-      setSubmitting(false)
-      return
+      toast.error(error.message || "Failed to send join request.");
+      setSubmitting(false);
+      return;
     }
 
-    toast.success("Join request sent. Waiting for host approval.")
-    router.push(`/game/${gameId}`)
-    router.refresh()
+    toast.success("Join request sent. Waiting for host approval.");
+    router.push(`/game/${gameId}`);
+    router.refresh();
   }
 
   return (
@@ -104,5 +110,5 @@ export function JoinRequestForm({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

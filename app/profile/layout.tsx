@@ -1,19 +1,19 @@
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { User, LayoutDashboard, LogOut } from "lucide-react"
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { User, LayoutDashboard, LogOut } from "lucide-react";
 
 export default async function ProfileLayout({
-  children
+  children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
-    data: { user }
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -48,5 +48,5 @@ export default async function ProfileLayout({
         {children}
       </main>
     </div>
-  )
+  );
 }

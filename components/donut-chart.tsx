@@ -1,48 +1,48 @@
-"use client"
+"use client";
 
-import { PayoutSchema } from "@/lib/schemas"
+import { PayoutSchema } from "@/lib/schemas";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent
-} from "@/components/ui/chart"
-import { Label, LabelList, Pie, PieChart } from "recharts"
-import { useMemo } from "react"
-import { formatDollar } from "@/lib/utils"
-import chroma from "chroma-js"
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Label, LabelList, Pie, PieChart } from "recharts";
+import { useMemo } from "react";
+import { formatDollar } from "@/lib/utils";
+import chroma from "chroma-js";
 
 export function DonutCharts({ payout }: { payout: PayoutSchema }) {
-  const players = payout.players.toSorted((a, b) => b.net - a.net)
-  const smallestNet = players[players.length - 1].net
-  const largestNet = players[0].net
+  const players = payout.players.toSorted((a, b) => b.net - a.net);
+  const smallestNet = players[players.length - 1].net;
+  const largestNet = players[0].net;
 
   const colors = useMemo(() => {
-    const lowerBound = smallestNet
-    const upperBound = largestNet
-    let success: string
-    let destructive: string
-    let muted: string
+    const lowerBound = smallestNet;
+    const upperBound = largestNet;
+    let success: string;
+    let destructive: string;
+    let muted: string;
 
     if (typeof window === "undefined") {
       // Server-side fallback colors
-      success = "#22c55e"
-      destructive = "#ef4444"
-      muted = "#71717a"
+      success = "#22c55e";
+      destructive = "#ef4444";
+      muted = "#71717a";
     } else {
       // Check for dark mode and use appropriate colors
       const isDark =
         window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
 
       if (isDark) {
-        success = "#4ade80" // green-400
-        destructive = "#f87171" // red-400
-        muted = "#9ca3af" // gray-400
+        success = "#4ade80"; // green-400
+        destructive = "#f87171"; // red-400
+        muted = "#9ca3af"; // gray-400
       } else {
-        success = "#22c55e" // green-500
-        destructive = "#ef4444" // red-500
-        muted = "#71717a" // zinc-500
+        success = "#22c55e"; // green-500
+        destructive = "#ef4444"; // red-500
+        muted = "#71717a"; // zinc-500
       }
     }
 
@@ -51,23 +51,23 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
       .mode("lrgb")
       .domain([lowerBound, 0, upperBound])
       .colors(upperBound + Math.abs(lowerBound) + 1)
-      .toReversed()
-  }, [smallestNet, largestNet])
+      .toReversed();
+  }, [smallestNet, largestNet]);
 
   const playersData = players.map((player) => ({
     name: player.displayName,
     cashIn: player.cashIn,
     cashOut: player.cashOut,
-    fill: colors[Math.floor(player.net + Math.abs(smallestNet))]
-  }))
+    fill: colors[Math.floor(player.net + Math.abs(smallestNet))],
+  }));
 
   const chartConfig = Object.fromEntries(
-    playersData.map((player) => [player.name, { label: player.name }])
-  ) satisfies ChartConfig
+    playersData.map((player) => [player.name, { label: player.name }]),
+  ) satisfies ChartConfig;
 
   const totalPot = useMemo(() => {
-    return playersData.reduce((acc, curr) => acc + curr.cashOut, 0)
-  }, [playersData])
+    return playersData.reduce((acc, curr) => acc + curr.cashOut, 0);
+  }, [playersData]);
 
   return (
     <ChartContainer
@@ -83,11 +83,11 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
               labelFormatter={(_, payload) => {
                 switch (payload[0].dataKey) {
                   case "cashOut":
-                    return "Cash Out"
+                    return "Cash Out";
                   case "cashIn":
-                    return "Cash In"
+                    return "Cash In";
                   default:
-                    return "Cash In/Out"
+                    return "Cash In/Out";
                 }
               }}
             />
@@ -148,7 +148,7 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
                         Total Pot
                       </tspan>
                     </text>
-                  )
+                  );
                 }
               }}
             />
@@ -156,5 +156,5 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
         </Pie>
       </PieChart>
     </ChartContainer>
-  )
+  );
 }
