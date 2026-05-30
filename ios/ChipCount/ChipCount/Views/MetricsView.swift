@@ -7,8 +7,10 @@ struct MetricsView: View {
   @State private var metrics: GameMetrics?
   @State private var errorMessage: String?
   @State private var isLoading = false
+  @State private var deleteCandidate: String?
 
   let gameId: String
+  let isHost: Bool
 
   var body: some View {
     List {
@@ -39,17 +41,31 @@ struct MetricsView: View {
 
         Section("Table History") {
           ForEach(metrics.sessionTimestamps, id: \.self) { timestamp in
-            VStack(alignment: .leading, spacing: 6) {
-              Text(timestamp.formattedSnapshotDate)
-                .font(.headline)
-              let players = metrics.playerSnapshots.filter { $0.snapshottedAt == timestamp }
-              let guests = metrics.guestSnapshots.filter { $0.snapshottedAt == timestamp }
-              Text("\(players.count) players, \(guests.count) guests")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-              Text("Total net \(sessionTotal(players: players, guests: guests).chipCountCurrency)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+              VStack(alignment: .leading, spacing: 6) {
+                Text(timestamp.formattedSnapshotDate)
+                  .font(.headline)
+                let players = metrics.playerSnapshots.filter { $0.snapshottedAt == timestamp }
+                let guests = metrics.guestSnapshots.filter { $0.snapshottedAt == timestamp }
+                Text("\(players.count) players, \(guests.count) guests")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                Text("Total net \(sessionTotal(players: players, guests: guests).chipCountCurrency)")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+
+              Spacer()
+
+              if isHost {
+                Button(role: .destructive) {
+                  deleteCandidate = timestamp
+                } label: {
+                  Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Delete session")
+              }
             }
           }
         }
@@ -71,6 +87,20 @@ struct MetricsView: View {
     .task {
       await load()
     }
+    .confirmationDialog(
+      "Delete Session History?",
+      isPresented: Binding(
+        get: { deleteCandidate != nil },
+        set: { if !$0 { deleteCandidate = nil } }
+      ),
+      presenting: deleteCandidate
+    ) { timestamp in
+      Button("Delete Session", role: .destructive) {
+        Task { await deleteSession(at: timestamp) }
+      }
+    } message: { timestamp in
+      Text("This removes the \(timestamp.formattedSnapshotDate) snapshot and reverses its profile profit changes.")
+    }
   }
 
   private func load() async {
@@ -87,6 +117,16 @@ struct MetricsView: View {
 
   private func sessionTotal(players: [SessionSnapshot], guests: [GuestSessionSnapshot]) -> Double {
     players.reduce(0) { $0 + $1.sessionNet } + guests.reduce(0) { $0 + $1.sessionNet }
+  }
+
+  private func deleteSession(at timestamp: String) async {
+    do {
+      try await service.deleteSession(gameId: gameId, snapshottedAt: timestamp)
+      deleteCandidate = nil
+      await load()
+    } catch {
+      errorMessage = error.localizedDescription
+    }
   }
 }
 

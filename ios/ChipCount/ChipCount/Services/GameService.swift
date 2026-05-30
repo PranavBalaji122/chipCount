@@ -131,6 +131,12 @@ struct GameService {
       .execute()
   }
 
+  func transferHost(gameId: String, newHostId: String) async throws {
+    try await supabase
+      .rpc("transfer_host", params: TransferHostParams(pGameId: gameId, pNewHostId: newHostId))
+      .execute()
+  }
+
   func addGuest(gameId: String, name: String, cashIn: Double, cashOut: Double) async throws -> GameGuest {
     try await supabase
       .from("game_guests")
@@ -196,6 +202,15 @@ struct GameService {
       playerSnapshots: playerSnapshots,
       guestSnapshots: guestSnapshots
     )
+  }
+
+  func deleteSession(gameId: String, snapshottedAt: String) async throws {
+    try await supabase
+      .rpc(
+        "delete_session_at",
+        params: DeleteSessionParams(pGameId: gameId, pSnapshottedAt: snapshottedAt)
+      )
+      .execute()
   }
 
   func observeGame(gameId: String, onChange: @escaping @Sendable () async -> Void) async -> Task<Void, Never> {
@@ -355,6 +370,26 @@ private struct CloseSessionParams: Encodable {
   enum CodingKeys: String, CodingKey {
     case pGameId = "p_game_id"
     case pFinalStatus = "p_final_status"
+  }
+}
+
+private struct TransferHostParams: Encodable {
+  let pGameId: String
+  let pNewHostId: String
+
+  enum CodingKeys: String, CodingKey {
+    case pGameId = "p_game_id"
+    case pNewHostId = "p_new_host_id"
+  }
+}
+
+private struct DeleteSessionParams: Encodable {
+  let pGameId: String
+  let pSnapshottedAt: String
+
+  enum CodingKeys: String, CodingKey {
+    case pGameId = "p_game_id"
+    case pSnapshottedAt = "p_snapshotted_at"
   }
 }
 
