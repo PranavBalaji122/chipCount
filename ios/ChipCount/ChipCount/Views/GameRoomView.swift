@@ -12,6 +12,7 @@ struct GameRoomView: View {
   @State private var guestName = ""
   @State private var guestCashIn = 0.0
   @State private var guestCashOut = 0.0
+  @State private var transferCandidate: GamePlayer?
   @State private var realtimeTask: Task<Void, Never>?
 
   let gameId: String
@@ -65,6 +66,20 @@ struct GameRoomView: View {
         Task { await load() }
       }
     }
+    .confirmationDialog(
+      "Transfer Host?",
+      isPresented: Binding(
+        get: { transferCandidate != nil },
+        set: { if !$0 { transferCandidate = nil } }
+      ),
+      presenting: transferCandidate
+    ) { player in
+      Button("Transfer to \(player.displayName ?? String(player.userId.prefix(8)))", role: .destructive) {
+        Task { await transferHost(to: player) }
+      }
+    } message: { player in
+      Text("\(player.displayName ?? String(player.userId.prefix(8))) will immediately control this table.")
+    }
   }
 
   @ViewBuilder
@@ -94,7 +109,7 @@ struct GameRoomView: View {
         }
 
         NavigationLink {
-          MetricsView(gameId: snapshot.game.id)
+          MetricsView(gameId: snapshot.game.id, isHost: isHost(snapshot))
         } label: {
           Label("Metrics", systemImage: "chart.line.uptrend.xyaxis")
         }
@@ -254,6 +269,23 @@ struct GameRoomView: View {
           Label("End Table", systemImage: "xmark.circle")
         }
       }
+
+      let transferCandidates = snapshot.approvedPlayers.filter { $0.userId != snapshot.game.hostId }
+      if !transferCandidates.isEmpty {
+        Section {
+          ForEach(transferCandidates) { player in
+            Button {
+              transferCandidate = player
+            } label: {
+              Label(player.displayName ?? String(player.userId.prefix(8)), systemImage: "crown")
+            }
+          }
+        } header: {
+          Text("Transfer Host")
+        } footer: {
+          Text("The selected player immediately becomes the table host.")
+        }
+      }
     }
   }
 
@@ -372,6 +404,16 @@ struct GameRoomView: View {
   private func endTable() async {
     do {
       try await service.endTable(gameId: gameId)
+      await load()
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func transferHost(to player: GamePlayer) async {
+    do {
+      try await service.transferHost(gameId: gameId, newHostId: player.userId)
+      transferCandidate = nil
       await load()
     } catch {
       errorMessage = error.localizedDescription

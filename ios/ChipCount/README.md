@@ -35,11 +35,13 @@ Native SwiftUI app scaffold for ChipCount.
 
 ## Backend dependency
 
-Run migrations through `supabase/migrations/00017_standardize_host_session_rpcs.sql` before using the app. The iOS client calls:
+Run migrations through `supabase/migrations/00018_transfer_host_rpc.sql` before using the app. The iOS client calls:
 
 - `close_session_with_debts`
 - `reopen_session`
 - `end_table`
+- `delete_session_at`
+- `transfer_host`
 
 ## Local test
 
