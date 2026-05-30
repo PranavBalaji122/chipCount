@@ -225,7 +225,12 @@ private struct CreateTableSheet: View {
           Button("Create") {
             Task {
               isSubmitting = true
-              await onCreate(tableName, guests)
+              var finalGuests = guests
+              let trimmed = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
+              if !trimmed.isEmpty, !finalGuests.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+                finalGuests.append(trimmed)
+              }
+              await onCreate(tableName, finalGuests)
               isSubmitting = false
             }
           }
