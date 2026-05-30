@@ -2,13 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardActions } from "@/components/dashboard-actions"
 import { HostEndTableButton } from "@/components/host-end-table-button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
+import { Leaderboard } from "@/components/leaderboard"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -22,6 +16,19 @@ export default async function DashboardPage() {
     data: { user }
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
+
+  // Get user's profile for greeting
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  const displayName =
+    profile?.display_name ||
+    user.user_metadata?.display_name ||
+    user.user_metadata?.full_name ||
+    null
 
   // Get user's game memberships
   const { data: membershipsRaw } = await supabase
@@ -39,28 +46,45 @@ export default async function DashboardPage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Dashboard</CardTitle>
-          <CardDescription>
-            Start a new table or join one with a game ID.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DashboardActions />
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-xl space-y-8">
+      {/* Greeting */}
+      <div className="animate-fade-in-up">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {displayName ? (
+            <>
+              Welcome back, {displayName}
+              <span className="ml-1.5 inline-block" aria-hidden="true">
+                👋
+              </span>
+            </>
+          ) : (
+            <>
+              Welcome back
+              <span className="ml-1.5 inline-block" aria-hidden="true">
+                👋
+              </span>
+            </>
+          )}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Start a new table or jump back into an active game.
+        </p>
+      </div>
 
+      {/* Action tiles */}
+      <div className="animate-fade-in-up animate-delay-1">
+        <DashboardActions />
+      </div>
+
+      {/* Active tables */}
       {memberships && memberships.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your active tables</CardTitle>
-            <CardDescription>
-              Quickly jump back into tables you&apos;re hosting or playing in.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div className="animate-fade-in-up animate-delay-2 space-y-3">
+          <div>
+            <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Active Tables
+            </h2>
+          </div>
+          <div className="divide-y divide-border rounded-xl border bg-card/50">
             {memberships.map(
               (m: {
                 status: string
@@ -96,35 +120,39 @@ export default async function DashboardPage() {
                 return (
                   <div
                     key={game.id}
-                    className={`flex items-center justify-between rounded border px-3 py-2 text-sm ${
+                    className={`flex items-center justify-between px-4 py-3 transition-colors first:rounded-t-xl last:rounded-b-xl ${
                       isDenied
-                        ? "border-red-500/20 bg-red-500/5 opacity-75"
-                        : ""
+                        ? "bg-destructive/5 opacity-75"
+                        : "hover:bg-muted/50"
                     }`}
                   >
-                    <div>
-                      <p className="font-medium">
-                        {game.description || "Game"}{" "}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium">
+                          {game.description || "Game"}
+                        </p>
                         <span
-                          className={`ml-1 text-xs ${
-                            isDenied
-                              ? "text-destructive"
-                              : "text-muted-foreground"
+                          className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                            isHost
+                              ? "bg-primary/15 text-primary"
+                              : isDenied
+                                ? "bg-destructive/15 text-destructive"
+                                : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          ({roleLabel})
+                          {roleLabel}
                         </span>
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        ID: <span className="font-mono">{game.short_code}</span>
+                      </div>
+                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        {game.short_code}
                       </p>
                       {isDenied && (
-                        <p className="text-destructive text-xs mt-0.5">
+                        <p className="mt-0.5 text-xs text-destructive">
                           You were removed — open the game to request to rejoin.
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="ml-3 flex shrink-0 items-center gap-2">
                       <Button asChild size="sm" variant="outline">
                         <Link href={`/game/${game.id}`} prefetch={true}>
                           Open
@@ -141,9 +169,14 @@ export default async function DashboardPage() {
                 )
               }
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
+
+      {/* Leaderboard */}
+      <div className="animate-fade-in-up animate-delay-3">
+        <Leaderboard />
+      </div>
     </div>
   )
 }

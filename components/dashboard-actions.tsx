@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Play, LogIn } from "lucide-react"
+import { Loader2, Play, LogIn, ArrowRight } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 
 export function DashboardActions() {
@@ -26,6 +26,7 @@ export function DashboardActions() {
   const [startLoading, setStartLoading] = useState(false)
   const [gameName, setGameName] = useState("")
   const [showNameInput, setShowNameInput] = useState(false)
+  const [showJoinInput, setShowJoinInput] = useState(false)
 
   async function ensureProfile(
     supabase: ReturnType<typeof createClient>,
@@ -151,7 +152,8 @@ export function DashboardActions() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
+      {/* Create Table name dialog */}
       <Dialog
         open={showNameInput}
         onOpenChange={(open) => {
@@ -220,47 +222,85 @@ export function DashboardActions() {
         </DialogContent>
       </Dialog>
 
-      {/* Start Game button */}
-      <div className="flex flex-col gap-2">
-        <Button
+      {/* Side-by-side action tiles */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Create Table tile */}
+        <button
+          id="create-table-tile"
+          type="button"
           onClick={() => setShowNameInput(true)}
           disabled={startLoading}
-          className="w-full"
-          size="lg"
+          className="group relative flex flex-col items-center justify-center gap-3 rounded-2xl border border-primary/20 bg-primary/[0.08] px-4 py-6 text-center transition-all duration-200 hover:border-primary/40 hover:bg-primary/[0.12] hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
         >
-          <Play className="mr-2 h-4 w-4" />
-          Create Table
-        </Button>
-        <p className="text-muted-foreground text-xs">
-          Create a new table and share the game ID for others to join.
-        </p>
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary transition-colors group-hover:bg-primary/25">
+            <Play className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Create Table</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Start a new game
+            </p>
+          </div>
+        </button>
+
+        {/* Join Table tile */}
+        <button
+          id="join-table-tile"
+          type="button"
+          onClick={() => {
+            setShowJoinInput(true)
+            setJoinError(null)
+          }}
+          className="group relative flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/50 px-4 py-6 text-center transition-all duration-200 hover:border-border/80 hover:bg-card/80 hover:shadow-lg hover:shadow-black/5 active:scale-[0.98]"
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
+            <LogIn className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground">Join Table</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Enter a game ID
+            </p>
+          </div>
+        </button>
       </div>
 
-      <form onSubmit={handleJoinGame} className="flex flex-col gap-2">
-        <Label htmlFor="join-code">Join with Game ID</Label>
-        <div className="flex gap-2">
-          <Input
-            id="join-code"
-            placeholder="e.g. a1b2c3d4"
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value)}
-            className="font-mono"
-          />
-          <Button type="submit" disabled={joinLoading}>
-            {joinLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <LogIn className="h-4 w-4" />
-            )}
-            <span className="sr-only">Join table</span>
-          </Button>
-        </div>
-        {joinError && (
-          <p className="text-destructive text-sm" role="alert">
-            {joinError}
-          </p>
-        )}
-      </form>
-    </div>
+      {/* Join table inline input — slides in below the tiles */}
+      {showJoinInput && (
+        <form
+          onSubmit={handleJoinGame}
+          className="animate-fade-in-up mt-3 flex flex-col gap-2"
+        >
+          <div className="flex gap-2">
+            <Input
+              id="join-code"
+              placeholder="Enter game ID, e.g. a1b2c3d4"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              className="font-mono"
+              autoFocus
+            />
+            <Button
+              type="submit"
+              disabled={joinLoading}
+              size="default"
+              className="shrink-0"
+            >
+              {joinLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowRight className="h-4 w-4" />
+              )}
+              <span className="sr-only">Join table</span>
+            </Button>
+          </div>
+          {joinError && (
+            <p className="text-destructive text-sm" role="alert">
+              {joinError}
+            </p>
+          )}
+        </form>
+      )}
+    </>
   )
 }
