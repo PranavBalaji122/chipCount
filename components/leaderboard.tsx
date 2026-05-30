@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import Link from "next/link"
 import { formatDollar } from "@/lib/utils"
 
@@ -16,24 +22,46 @@ export async function Leaderboard() {
     <Card id="leaderboard">
       <CardHeader>
         <CardTitle>Leaderboard</CardTitle>
-        <CardDescription>Top 3 by net profit (public profiles only)</CardDescription>
+        <CardDescription>
+          Top 3 by net profit (public profiles only)
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {!profiles?.length ? (
-          <p className="text-muted-foreground text-sm">No public profiles yet.</p>
+          <p className="text-muted-foreground text-sm">
+            No public profiles yet.
+          </p>
         ) : (
           <ul className="space-y-2">
             {profiles.map((p, i) => (
-              <li key={p.id} className="flex items-center justify-between rounded border px-3 py-2">
-                <span className="font-medium">
-                  #{i + 1}{" "}
-                  <Link href={`/profile/${p.id}`} className="text-link hover:underline">
-                    {p.display_name || "Anonymous"}
-                  </Link>
-                </span>
-                <span className={p.net_profit >= 0 ? "text-green-600" : "text-red-600"}>
-                  {formatDollar(Number(p.net_profit))}
-                </span>
+              <li
+                key={p.id}
+                className="flex items-center justify-between rounded border px-3 py-2"
+              >
+                {(() => {
+                  const net = Number(p.net_profit)
+                  const netLabel =
+                    net > 0 ? "profit" : net < 0 ? "loss" : "even"
+                  return (
+                    <>
+                      <span className="font-medium">
+                        #{i + 1}{" "}
+                        <Link
+                          href={`/profile/${p.id}`}
+                          className="text-link hover:underline"
+                        >
+                          {p.display_name || "Anonymous"}
+                        </Link>
+                      </span>
+                      <span
+                        className={net >= 0 ? "text-green-600" : "text-red-600"}
+                      >
+                        {formatDollar(net)}{" "}
+                        <span className="sr-only">{netLabel}</span>
+                      </span>
+                    </>
+                  )
+                })()}
               </li>
             ))}
           </ul>

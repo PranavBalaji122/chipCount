@@ -8,6 +8,10 @@ import {
 import { Bar, BarChart, CartesianGrid, Cell, LabelList } from "recharts"
 import { formatDollar } from "@/lib/utils"
 
+function shortChartLabel(value: string) {
+  return value.length > 14 ? `${value.slice(0, 13)}…` : value
+}
+
 export function NegativeChart({ players }: { players: PlayerSchema[] }) {
   const chartConfig = {
     net: {
@@ -32,7 +36,11 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
                 : "var(--muted-foreground)"
         }))}
       >
-        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.3} />
+        <CartesianGrid
+          vertical={false}
+          stroke="var(--border)"
+          strokeOpacity={0.45}
+        />
         <ChartTooltip
           cursor={false}
           content={
@@ -43,18 +51,19 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
           }
         />
         <Bar dataKey="net">
-          <LabelList 
-            position="bottom" 
-            dataKey="displayName" 
-            fillOpacity={1} 
-            fill="hsl(var(--foreground))"
+          <LabelList
+            position="bottom"
+            dataKey="displayName"
+            fillOpacity={1}
+            fill="var(--foreground)"
             fontSize={12}
+            formatter={(val: string) => shortChartLabel(val)}
           />
           <LabelList
             position="top"
             dataKey="net"
             fillOpacity={1}
-            fill="hsl(var(--foreground))"
+            fill="var(--foreground)"
             fontSize={12}
             formatter={(val: number) => formatDollar(val)}
           />
