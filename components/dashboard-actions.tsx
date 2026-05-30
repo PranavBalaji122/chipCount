@@ -4,6 +4,14 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Play, LogIn } from "lucide-react"
@@ -19,23 +27,26 @@ export function DashboardActions() {
   const [gameName, setGameName] = useState("")
   const [showNameInput, setShowNameInput] = useState(false)
 
-  async function ensureProfile(supabase: ReturnType<typeof createClient>, user: User) {
+  async function ensureProfile(
+    supabase: ReturnType<typeof createClient>,
+    user: User
+  ) {
     const fallbackName = user.email ? user.email.split("@")[0] : null
     const displayName =
-      (typeof user.user_metadata?.display_name === "string" && user.user_metadata.display_name) ||
-      (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+      (typeof user.user_metadata?.display_name === "string" &&
+        user.user_metadata.display_name) ||
+      (typeof user.user_metadata?.full_name === "string" &&
+        user.user_metadata.full_name) ||
       fallbackName
 
-    const { error } = await supabase
-      .from("profiles")
-      .upsert(
-        {
-          id: user.id,
-          email: user.email ?? null,
-          display_name: displayName
-        },
-        { onConflict: "id", ignoreDuplicates: true }
-      )
+    const { error } = await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email ?? null,
+        display_name: displayName
+      },
+      { onConflict: "id", ignoreDuplicates: true }
+    )
 
     if (error) throw error
   }
@@ -46,7 +57,9 @@ export function DashboardActions() {
     setStartLoading(true)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user }
+      } = await supabase.auth.getUser()
       if (!user) {
         setStartError("Not logged in")
         setStartLoading(false)
@@ -62,11 +75,13 @@ export function DashboardActions() {
         .select("id, short_code")
         .single()
       if (error) throw error
-      const { error: playerError } = await supabase.from("game_players").insert({
-        game_id: game.id,
-        user_id: user.id,
-        status: "approved"
-      })
+      const { error: playerError } = await supabase
+        .from("game_players")
+        .insert({
+          game_id: game.id,
+          user_id: user.id,
+          status: "approved"
+        })
       if (playerError) throw playerError
       router.push(`/game/${game.id}`)
       router.refresh()
@@ -88,7 +103,9 @@ export function DashboardActions() {
     setJoinLoading(true)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user }
+      } = await supabase.auth.getUser()
       if (!user) {
         setJoinError("Not logged in")
         setJoinLoading(false)
@@ -108,11 +125,13 @@ export function DashboardActions() {
         setJoinLoading(false)
         return
       }
-      const { error: insertError } = await supabase.from("game_players").insert({
-        game_id: game.id,
-        user_id: user.id,
-        status: "pending"
-      })
+      const { error: insertError } = await supabase
+        .from("game_players")
+        .insert({
+          game_id: game.id,
+          user_id: user.id,
+          status: "pending"
+        })
       if (insertError) {
         if (insertError.code === "23505") {
           setJoinError("You already joined this game")
@@ -133,58 +152,73 @@ export function DashboardActions() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Start Game modal */}
-      {showNameInput && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowNameInput(false)
-              setGameName("")
-              setStartError(null)
-            }
-          }}
-        >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl border bg-background shadow-2xl p-6 space-y-5">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">New Table</h2>
-              <p className="text-zinc-400 text-sm">Give your table a name so players know what they're joining.</p>
+      <Dialog
+        open={showNameInput}
+        onOpenChange={(open) => {
+          if (!open && !startLoading) {
+            setShowNameInput(false)
+            setGameName("")
+            setStartError(null)
+          } else {
+            setShowNameInput(open)
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New Table</DialogTitle>
+            <DialogDescription>
+              Give your table a name so players know what they&apos;re joining.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleStartGame} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="game-name">
+                Table name{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <Input
+                id="game-name"
+                placeholder="e.g. Friday Night Poker"
+                value={gameName}
+                onChange={(e) => setGameName(e.target.value)}
+                autoFocus
+                disabled={startLoading}
+                className="bg-muted/50"
+              />
             </div>
-            <form onSubmit={handleStartGame} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="game-name">
-                  Table name <span className="text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="game-name"
-                  placeholder="e.g. Friday Night Poker"
-                  value={gameName}
-                  onChange={(e) => setGameName(e.target.value)}
-                  autoFocus
-                  disabled={startLoading}
-                  className="bg-muted/50"
-                />
-              </div>
-              {startError && <p className="text-destructive text-sm">{startError}</p>}
-              <div className="flex gap-2">
-                <Button type="submit" disabled={startLoading} className="flex-1">
-                  {startLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                  Create Table
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={startLoading}
-                  onClick={() => { setShowNameInput(false); setGameName(""); setStartError(null) }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            {startError && (
+              <p className="text-destructive text-sm" role="alert">
+                {startError}
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="submit" disabled={startLoading} className="flex-1">
+                {startLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                Create Table
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={startLoading}
+                onClick={() => {
+                  setShowNameInput(false)
+                  setGameName("")
+                  setStartError(null)
+                }}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Start Game button */}
       <div className="flex flex-col gap-2">
@@ -202,7 +236,6 @@ export function DashboardActions() {
         </p>
       </div>
 
-
       <form onSubmit={handleJoinGame} className="flex flex-col gap-2">
         <Label htmlFor="join-code">Join with Game ID</Label>
         <div className="flex gap-2">
@@ -214,12 +247,20 @@ export function DashboardActions() {
             className="font-mono"
           />
           <Button type="submit" disabled={joinLoading}>
-            {joinLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+            {joinLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogIn className="h-4 w-4" />
+            )}
+            <span className="sr-only">Join table</span>
           </Button>
         </div>
-        {joinError && <p className="text-destructive text-sm">{joinError}</p>}
+        {joinError && (
+          <p className="text-destructive text-sm" role="alert">
+            {joinError}
+          </p>
+        )}
       </form>
-
     </div>
   )
 }

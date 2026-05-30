@@ -16,7 +16,7 @@ declare
   v_guest_rows int;
 begin
   select host_id into v_host_id from public.games where id = p_game_id for update;
-  if v_host_id is null or v_host_id != auth.uid() then
+  if v_host_id is distinct from auth.uid() then
     raise exception 'Not the host of this game';
   end if;
 
@@ -50,4 +50,5 @@ begin
 end;
 $$;
 
+revoke all on function public.delete_session_at(uuid, timestamptz) from public;
 grant execute on function public.delete_session_at(uuid, timestamptz) to authenticated;

@@ -1,7 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { formatDollar } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { NetProfitGraph } from "@/components/net-profit-graph"
@@ -16,18 +22,23 @@ export default async function PublicProfilePage({
   const supabase = await createClient()
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, phone, email, venmo_handle, net_profit, profile_public")
+    .select(
+      "id, display_name, phone, email, venmo_handle, net_profit, profile_public"
+    )
     .eq("id", userId)
     .single()
 
   if (!profile || !profile.profile_public) notFound()
 
   const net = Number(profile.net_profit)
+  const netLabel = net > 0 ? "profit" : net < 0 ? "loss" : "even"
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <Link href="/dashboard">
-        <Button variant="ghost" size="sm">Back to dashboard</Button>
+        <Button variant="ghost" size="sm">
+          Back to dashboard
+        </Button>
       </Link>
       <Card>
         <CardHeader>
@@ -37,8 +48,11 @@ export default async function PublicProfilePage({
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-4">
             <p className="text-muted-foreground text-sm">Net profit</p>
-            <p className={`text-2xl font-bold ${net >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <p
+              className={`text-2xl font-bold ${net >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
               {formatDollar(net)}
+              <span className="sr-only"> {netLabel}</span>
             </p>
           </div>
           {profile.venmo_handle && (
@@ -48,8 +62,7 @@ export default async function PublicProfilePage({
               rel="noopener noreferrer"
               className="text-link inline-flex items-center gap-1"
             >
-              <IoLogoVenmo className="h-5 w-5" />
-              @{profile.venmo_handle}
+              <IoLogoVenmo className="h-5 w-5" />@{profile.venmo_handle}
             </a>
           )}
           {profile.phone && <p className="text-sm">Phone: {profile.phone}</p>}
