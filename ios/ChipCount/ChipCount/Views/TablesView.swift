@@ -22,9 +22,7 @@ struct TablesView: View {
             Text("Welcome back")
               .font(.largeTitle.bold())
           }
-          Text("Start a new table or jump back into an active game.")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+
         }
         .padding(.horizontal)
         .padding(.top, 8)
