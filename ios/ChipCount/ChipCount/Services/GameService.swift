@@ -21,7 +21,7 @@ struct GameService {
     }
   }
 
-  func createTable(hostId: String, description: String?) async throws -> Game {
+  func createTable(hostId: String, description: String?, guests: [String] = []) async throws -> Game {
     let game: Game = try await supabase
       .from("games")
       .insert(NewGame(hostId: hostId, description: description?.nilIfBlank))
@@ -34,6 +34,14 @@ struct GameService {
       .from("game_players")
       .insert(NewGamePlayer(gameId: game.id, userId: hostId, status: .approved, requestedCashIn: 0, requestedCashOut: 0))
       .execute()
+
+    if !guests.isEmpty {
+      let newGuests = guests.map { NewGuest(gameId: game.id, name: $0, cashIn: 0, cashOut: 0) }
+      try? await supabase
+        .from("game_guests")
+        .insert(newGuests)
+        .execute()
+    }
 
     return game
   }
