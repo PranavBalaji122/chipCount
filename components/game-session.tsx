@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { setGameStatus, kickPlayer, requestRejoin, transferHost, updateRequestedAmounts } from "@/lib/actions"
+import { closeGame, setGameStatus, kickPlayer, requestRejoin, transferHost, updateRequestedAmounts } from "@/lib/actions"
 import { calcPayouts } from "@/lib/utils"
 import type { GameSchema } from "@/lib/schemas"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -484,41 +484,15 @@ export function GameSession({
   async function handleEndGame() {
     if (!payout || !gameForPayout || (approved.length + guests.filter(g => g.cash_in !== null || g.cash_out !== null).length) < 2) return
     setEnding(true)
-    const nameToUserId = new Map<string, string>()
-    
-    // Map approved players to user IDs
-    approved.forEach((player) => {
-      const playerName = gameForPayout.players.find(gp => {
-        const base = player.venmo_handle ? `@${player.venmo_handle}` : player.display_name || `Player_${player.user_id.slice(0, 8)}`
-        return gp.name === base || gp.name.startsWith(base + '_')
-      })?.name
-      if (playerName) {
-        nameToUserId.set(playerName, player.user_id)
-      }
-    })
-    
-    // Create profit deltas only for players with user IDs (excluding guests)
-    const profit_deltas = payout.players
-      .filter(pl => nameToUserId.has(pl.name)) // Only include players with user IDs
-      .map((pl) => ({
-        user_id: nameToUserId.get(pl.name)!,
-        profit_delta: pl.net
-      }))
-    
-    // Note: We don't validate that all payout players have user IDs since guests won't have them
-    const supabase = createClient()
-    const { error } = await supabase.rpc("end_game", {
-      p_game_id: game.id,
-      p_profit_deltas: profit_deltas
-    })
-    if (error) {
-      toast.error(error.message)
+    try {
+      await closeGame(game.id)
+      toast.success("Game ended. Profits and debts updated.")
+      router.push("/dashboard")
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to end game")
       setEnding(false)
-      return
     }
-    toast.success("Game ended. Profits updated.")
-    router.push("/dashboard")
-    router.refresh()
   }
 
   function copyGameLink() {
@@ -676,7 +650,7 @@ export function GameSession({
                 </span>
                 {p.status === "approved" && (
                   <>
-                    {/* Host controls: always editable, even when session is closed */}
+                    {/* Host controls: editable while active; reopen to make changes after close. */}
                     {isHost && (
                       <div className="flex flex-col gap-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -698,6 +672,7 @@ export function GameSession({
                               setFieldEditing(`host-${p.user_id}-cash_in`, false)
                               updateCash(game.id, p.user_id, v, p.cash_out)
                             }}
+                            disabled={isClosed}
                           />
                           <Input
                             className="w-24"
@@ -717,6 +692,7 @@ export function GameSession({
                               setFieldEditing(`host-${p.user_id}-cash_out`, false)
                               updateCash(game.id, p.user_id, p.cash_in, v)
                             }}
+                            disabled={isClosed}
                           />
                         </div>
                         {!isClosed && (p.requested_cash_in !== p.cash_in || p.requested_cash_out !== p.cash_out) && (

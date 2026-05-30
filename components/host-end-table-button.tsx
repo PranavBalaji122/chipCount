@@ -54,9 +54,9 @@ export function HostEndTableButton({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this table?</AlertDialogTitle>
+          <AlertDialogTitle>End this table?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this table?
+            Are you sure you want to end this table?
             {nameSuffix} This ends the game for everyone and removes it from
             the dashboard. This cannot be undone.
           </AlertDialogDescription>
@@ -69,7 +69,7 @@ export function HostEndTableButton({
             onClick={() => void handleConfirm()}
           >
             {pending && <Loader2 className="animate-spin" />}
-            {pending ? "Deleting…" : "Yes, delete table"}
+            {pending ? "Ending…" : "Yes, end table"}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
