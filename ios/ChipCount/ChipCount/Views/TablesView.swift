@@ -16,11 +16,11 @@ struct TablesView: View {
         // Greeting
         VStack(alignment: .leading, spacing: 4) {
           if let name = authStore.profile?.displayName, !name.isEmpty {
-            Text("Welcome back, \(name) 👋")
-              .font(.title2.bold())
+            Text("Welcome back, \(name)")
+              .font(.largeTitle.bold())
           } else {
-            Text("Welcome back 👋")
-              .font(.title2.bold())
+            Text("Welcome back")
+              .font(.largeTitle.bold())
           }
           Text("Start a new table or jump back into an active game.")
             .font(.subheadline)
@@ -35,12 +35,10 @@ struct TablesView: View {
             showingCreate = true
           } label: {
             VStack(spacing: 12) {
-              Image(systemName: "play.fill")
-                .font(.title2)
+              Image(systemName: "play.circle.fill")
+                .symbolRenderingMode(.hierarchical)
+                .font(.system(size: 40))
                 .foregroundStyle(.green)
-                .frame(width: 44, height: 44)
-                .background(Color.green.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
               
               VStack(spacing: 2) {
                 Text("Create Table")
@@ -54,11 +52,8 @@ struct TablesView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20)
             .background(Color(.secondarySystemGroupedBackground))
-            .overlay(
-              RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.green.opacity(0.2), lineWidth: 1)
-            )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
           }
           .buttonStyle(.plain)
 
@@ -67,11 +62,9 @@ struct TablesView: View {
           } label: {
             VStack(spacing: 12) {
               Image(systemName: "arrow.right.circle.fill")
-                .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .font(.system(size: 40))
                 .foregroundStyle(.secondary)
-                .frame(width: 44, height: 44)
-                .background(Color.secondary.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
               
               VStack(spacing: 2) {
                 Text("Join Table")
@@ -85,11 +78,8 @@ struct TablesView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20)
             .background(Color(.secondarySystemGroupedBackground))
-            .overlay(
-              RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-            )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
           }
           .buttonStyle(.plain)
         }
@@ -127,6 +117,7 @@ struct TablesView: View {
             }
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.03), radius: 8, y: 2)
             .padding(.horizontal)
           }
         }
@@ -141,15 +132,7 @@ struct TablesView: View {
     }
     .background(Color(.systemGroupedBackground))
     .navigationTitle("Tables")
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          Task { await loadTables() }
-        } label: {
-          Image(systemName: "arrow.clockwise")
-        }
-      }
-    }
+    .toolbar(.hidden, for: .navigationBar)
     .refreshable {
       await loadTables()
     }
