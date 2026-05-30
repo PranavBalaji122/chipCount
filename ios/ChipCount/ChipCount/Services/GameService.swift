@@ -147,11 +147,14 @@ struct GameService {
       .execute()
   }
 
-  func addGuest(gameId: String, name: String, cashIn: Double, cashOut: Double) async throws {
+  func addGuest(gameId: String, name: String, cashIn: Double, cashOut: Double) async throws -> GameGuest {
     try await supabase
       .from("game_guests")
       .insert(NewGuest(gameId: gameId, name: name, cashIn: cashIn, cashOut: cashOut))
+      .select("id, game_id, name, cash_in, cash_out")
+      .single()
       .execute()
+      .value
   }
 
   func updateGuest(_ guest: GameGuest) async throws {
