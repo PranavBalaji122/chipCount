@@ -16,10 +16,10 @@ struct TablesView: View {
         // Greeting
         VStack(alignment: .leading, spacing: 4) {
           if let name = authStore.profile?.displayName, !name.isEmpty {
-            Text("Welcome back, \(name)")
+            Text("welcom welcome, \(name)")
               .font(.largeTitle.bold())
           } else {
-            Text("Welcome back")
+            Text("welcom welcome")
               .font(.largeTitle.bold())
           }
 
