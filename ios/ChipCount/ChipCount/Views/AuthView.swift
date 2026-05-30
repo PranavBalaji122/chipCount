@@ -50,15 +50,11 @@ struct AuthView: View {
               isWorking = false
             }
           } label: {
-            ZStack {
-              HStack {
-                Image("GoogleLogo")
-                  .resizable()
-                  .scaledToFit()
-                  .frame(width: 19, height: 19)
-
-                Spacer()
-              }
+            HStack(spacing: 8) {
+              Image("GoogleLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 19, height: 19)
 
               Text("Sign in with Google")
                 .font(.system(size: 16, weight: .medium))
@@ -87,11 +83,6 @@ struct AuthView: View {
               .foregroundStyle(.red)
               .multilineTextAlignment(.center)
               .frame(minHeight: 18)
-          } else {
-            Text("Secure sign-in. No password to remember.")
-              .font(.footnote)
-              .foregroundStyle(.tertiary)
-              .frame(height: 18)
           }
         }
         .padding(.horizontal, 24)
