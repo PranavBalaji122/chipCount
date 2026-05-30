@@ -11,43 +11,135 @@ struct TablesView: View {
   @State private var isLoading = false
 
   var body: some View {
-    List {
-      Section {
-        Button {
-          showingCreate = true
-        } label: {
-          Label("Create Table", systemImage: "plus.circle.fill")
+    ScrollView {
+      VStack(alignment: .leading, spacing: 24) {
+        // Greeting
+        VStack(alignment: .leading, spacing: 4) {
+          if let name = authStore.profile?.displayName, !name.isEmpty {
+            Text("Welcome back, \(name) 👋")
+              .font(.title2.bold())
+          } else {
+            Text("Welcome back 👋")
+              .font(.title2.bold())
+          }
+          Text("Start a new table or jump back into an active game.")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
         }
+        .padding(.horizontal)
+        .padding(.top, 8)
 
-        Button {
-          showingJoin = true
-        } label: {
-          Label("Join with Game ID", systemImage: "arrow.right.circle.fill")
-        }
-      }
-
-      Section("Active Tables") {
-        if memberships.isEmpty && !isLoading {
-          ContentUnavailableView("No active tables", systemImage: "tablecells", description: Text("Create a table or join one with a game ID."))
-        } else {
-          ForEach(memberships) { membership in
-            Button {
-              selectedGame = membership.game
-            } label: {
-              TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
+        // Action Tiles
+        HStack(spacing: 16) {
+          Button {
+            showingCreate = true
+          } label: {
+            VStack(spacing: 12) {
+              Image(systemName: "play.fill")
+                .font(.title2)
+                .foregroundStyle(.green)
+                .frame(width: 44, height: 44)
+                .background(Color.green.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+              
+              VStack(spacing: 2) {
+                Text("Create Table")
+                  .font(.headline)
+                  .foregroundStyle(.primary)
+                Text("Start a new game")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
             }
-            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .background(Color(.secondarySystemGroupedBackground))
+            .overlay(
+              RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.green.opacity(0.2), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          }
+          .buttonStyle(.plain)
+
+          Button {
+            showingJoin = true
+          } label: {
+            VStack(spacing: 12) {
+              Image(systemName: "arrow.right.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44)
+                .background(Color.secondary.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+              
+              VStack(spacing: 2) {
+                Text("Join Table")
+                  .font(.headline)
+                  .foregroundStyle(.primary)
+                Text("Enter a game ID")
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .background(Color(.secondarySystemGroupedBackground))
+            .overlay(
+              RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          }
+          .buttonStyle(.plain)
+        }
+        .padding(.horizontal)
+
+        // Active Tables
+        VStack(alignment: .leading, spacing: 12) {
+          Text("ACTIVE TABLES")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal)
+          
+          if memberships.isEmpty && !isLoading {
+            ContentUnavailableView(
+              "No active tables",
+              systemImage: "tablecells",
+              description: Text("Create a table or join one with a game ID.")
+            )
+            .padding(.top, 20)
+          } else {
+            VStack(spacing: 0) {
+              ForEach(Array(memberships.enumerated()), id: \.element.id) { index, membership in
+                Button {
+                  selectedGame = membership.game
+                } label: {
+                  TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
+                }
+                .buttonStyle(.plain)
+                
+                if index < memberships.count - 1 {
+                  Divider()
+                    .padding(.leading, 16)
+                }
+              }
+            }
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal)
           }
         }
-      }
 
-      if let errorMessage {
-        Section {
+        if let errorMessage {
           Text(errorMessage)
             .foregroundStyle(.red)
+            .padding(.horizontal)
         }
       }
+      .padding(.bottom, 24)
     }
+    .background(Color(.systemGroupedBackground))
     .navigationTitle("Tables")
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
@@ -137,18 +229,28 @@ private struct TableRow: View {
 
       VStack(alignment: .trailing, spacing: 4) {
         Text(role)
-          .font(.caption.weight(.semibold))
+          .font(.caption2.weight(.bold))
+          .textCase(.uppercase)
           .padding(.horizontal, 8)
           .padding(.vertical, 4)
-          .background(roleColor.opacity(0.14))
+          .background(roleColor.opacity(0.15))
           .foregroundStyle(roleColor)
           .clipShape(Capsule())
-        Text(membership.game.status.rawValue.capitalized)
-          .font(.caption2)
-          .foregroundStyle(.secondary)
+          
+        if membership.status == .denied {
+          Text("Removed")
+            .font(.caption2)
+            .foregroundStyle(.red)
+        } else {
+          Text(membership.game.status.rawValue.capitalized)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
       }
     }
-    .padding(.vertical, 4)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 12)
+    .contentShape(Rectangle())
   }
 
   private var role: String {
