@@ -1,18 +1,18 @@
-import type { Metadata } from "next"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
+  CardTitle,
+} from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "ChipCount",
-  description: "Track poker games, settle up, and climb the leaderboard"
-}
+  description: "Track poker games, settle up, and climb the leaderboard",
+};
 
 export default function LandingPage() {
   return (
@@ -38,5 +38,5 @@ export default function LandingPage() {
         </CardContent>
       </Card>
     </main>
-  )
+  );
 }

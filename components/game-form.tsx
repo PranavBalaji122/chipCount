@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useFieldArray,
   useForm,
   Control,
   UseFormReturn,
   UseFieldArrayAppend,
-  UseFieldArrayRemove
-} from "react-hook-form"
-import { X, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+  UseFieldArrayRemove,
+} from "react-hook-form";
+import { X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -18,21 +18,21 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { gameSchema, GameSchema, PlayerSchema } from "@/lib/schemas"
-import { formattedDateTime } from "@/lib/utils"
-import { useQueryState } from "nuqs"
-import { parseZipson } from "@/lib/utils"
-import { useEffect } from "react"
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { gameSchema, GameSchema, PlayerSchema } from "@/lib/schemas";
+import { formattedDateTime } from "@/lib/utils";
+import { useQueryState } from "nuqs";
+import { parseZipson } from "@/lib/utils";
+import { useEffect } from "react";
 
 export function GameForm() {
   const [game, setGame] = useQueryState("game", {
     ...parseZipson,
     history: "replace",
-    throttleMs: 5000
-  })
+    throttleMs: 5000,
+  });
 
   const form = useForm<GameSchema>({
     resolver: zodResolver(gameSchema),
@@ -40,26 +40,26 @@ export function GameForm() {
       description: game?.description || `${formattedDateTime()} Game`,
       players: game?.players || [
         { name: "", cashIn: "", cashOut: "" },
-        { name: "", cashIn: "", cashOut: "" }
-      ]
-    }
-  })
+        { name: "", cashIn: "", cashOut: "" },
+      ],
+    },
+  });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "players"
-  })
+    name: "players",
+  });
 
   useEffect(() => {
     const subscription = form.watch((value) => {
-      const parsedVal = gameSchema.safeParse(value)
-      setGame(parsedVal.success ? parsedVal.data : value)
-    })
-    return () => subscription.unsubscribe()
-  }, [form, setGame])
+      const parsedVal = gameSchema.safeParse(value);
+      setGame(parsedVal.success ? parsedVal.data : value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setGame]);
 
   async function onSubmit(values: GameSchema) {
-    setGame(values)
+    setGame(values);
   }
 
   return (
@@ -96,7 +96,7 @@ export function GameForm() {
         </Button>
       </form>
     </Form>
-  )
+  );
 }
 
 const PlayerField = ({
@@ -104,13 +104,13 @@ const PlayerField = ({
   name,
   placeholder,
   label,
-  className
+  className,
 }: {
-  control: Control<GameSchema>
-  name: `players.${number}.name`
-  placeholder: string
-  label: string
-  className?: string
+  control: Control<GameSchema>;
+  name: `players.${number}.name`;
+  placeholder: string;
+  label: string;
+  className?: string;
 }) => (
   <FormField
     control={control}
@@ -124,18 +124,18 @@ const PlayerField = ({
       </FormItem>
     )}
   />
-)
+);
 
 const NumericPlayerField = ({
   control,
   name,
   placeholder,
-  label
+  label,
 }: {
-  control: Control<GameSchema>
-  name: `players.${number}.cashIn` | `players.${number}.cashOut`
-  placeholder: string
-  label: string
+  control: Control<GameSchema>;
+  name: `players.${number}.cashIn` | `players.${number}.cashOut`;
+  placeholder: string;
+  label: string;
 }) => (
   <FormField
     control={control}
@@ -155,20 +155,20 @@ const NumericPlayerField = ({
       </FormItem>
     )}
   />
-)
+);
 
 const PlayerFields = ({
   form,
   fields,
   append,
-  remove
+  remove,
 }: {
-  form: UseFormReturn<GameSchema>
+  form: UseFormReturn<GameSchema>;
   fields: ReturnType<
     typeof useFieldArray<GameSchema, "players", "id">
-  >["fields"]
-  append: UseFieldArrayAppend<GameSchema, "players">
-  remove: UseFieldArrayRemove
+  >["fields"];
+  append: UseFieldArrayAppend<GameSchema, "players">;
+  remove: UseFieldArrayRemove;
 }) => (
   <div className="space-y-2">
     <FormLabel className="grow">Players</FormLabel>
@@ -220,4 +220,4 @@ const PlayerFields = ({
       Add Player
     </Button>
   </div>
-)
+);

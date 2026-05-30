@@ -1,19 +1,19 @@
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { User, LayoutDashboard, LogOut } from "lucide-react"
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { User, LayoutDashboard, LogOut } from "lucide-react";
 
 export default async function DashboardLayout({
-  children
+  children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
-    data: { user }
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,9 +44,13 @@ export default async function DashboardLayout({
           </nav>
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 md:py-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 px-4 py-6 md:py-8"
+      >
         {children}
       </main>
     </div>
-  )
+  );
 }

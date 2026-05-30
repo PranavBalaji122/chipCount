@@ -1,48 +1,48 @@
-import { PlayerSchema } from "@/lib/schemas"
+import { PlayerSchema } from "@/lib/schemas";
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { TrendingDown, TrendingUp } from "lucide-react"
-import { formatDollar, formattedDateTime } from "@/lib/utils"
-import { IoLogoVenmo } from "react-icons/io5"
-import { SiCashapp } from "react-icons/si"
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { TrendingDown, TrendingUp } from "lucide-react";
+import { formatDollar, formattedDateTime } from "@/lib/utils";
+import { IoLogoVenmo } from "react-icons/io5";
+import { SiCashapp } from "react-icons/si";
 
 const Stat = ({ label, value: val }: { label: string; value: number }) => (
   <div className="bg-muted/50 border border-border flex w-full flex-col items-center justify-center rounded-md py-2 px-3 transition-all">
     <p className="text-xs text-muted-foreground font-medium">{label}</p>
     <p className="font-bold text-foreground">{formatDollar(val)}</p>
   </div>
-)
+);
 
 const Target = ({
   target,
   isSending,
-  val
+  val,
 }: {
-  target: string
-  isSending: boolean
-  val: number
+  target: string;
+  isSending: boolean;
+  val: number;
 }) => {
-  let link: string = ""
+  let link: string = "";
 
   if (target[0] === "@") {
-    const venmoUrl = new URL("https://venmo.com/")
+    const venmoUrl = new URL("https://venmo.com/");
     Object.entries({
       txn: isSending ? "pay" : "charge",
       audience: "private",
       recipients: target.substring(1),
       amount: val.toFixed(2),
-      note: `${formattedDateTime()} Game`
-    }).forEach(([key, value]) => venmoUrl.searchParams.set(key, value))
-    link = venmoUrl.toString()
+      note: `${formattedDateTime()} Game`,
+    }).forEach(([key, value]) => venmoUrl.searchParams.set(key, value));
+    link = venmoUrl.toString();
   }
-  if (target[0] === "$") link = `https://cash.app/$${target.substring(1)}`
+  if (target[0] === "$") link = `https://cash.app/$${target.substring(1)}`;
 
   return link ? (
     <a
@@ -61,36 +61,38 @@ const Target = ({
     </a>
   ) : (
     <>{target}</>
-  )
-}
+  );
+};
 
 export function PlayerSummary({
   player,
-  slippage
+  slippage,
 }: {
-  player: PlayerSchema
-  slippage: number
+  player: PlayerSchema;
+  slippage: number;
 }) {
   const netStatus =
-    player.net > 1e-9 ? "profit" : player.net < -1e-9 ? "loss" : "even"
+    player.net > 1e-9 ? "profit" : player.net < -1e-9 ? "loss" : "even";
   const transactionTypes = [
     {
       data: player.paidBy,
       variant: "destructive",
       icon: <TrendingDown />,
       title: "Owes",
-      preposition: "to"
+      preposition: "to",
     },
     {
       data: player.paidTo,
       variant: "success",
       icon: <TrendingUp />,
       title: "Receives",
-      preposition: "from"
-    }
-  ] as const
+      preposition: "from",
+    },
+  ] as const;
 
-  const nonEmptyTransactions = transactionTypes.filter((t) => t.data.length > 0)
+  const nonEmptyTransactions = transactionTypes.filter(
+    (t) => t.data.length > 0,
+  );
 
   return (
     <Card>
@@ -144,5 +146,5 @@ export function PlayerSummary({
         </CardContent>
       )}
     </Card>
-  )
+  );
 }

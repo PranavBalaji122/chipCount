@@ -1,10 +1,10 @@
-import type { Profile } from "@/lib/db-types"
-import { formatDollar } from "@/lib/utils"
-import { NetProfitGraph } from "./net-profit-graph"
+import type { Profile } from "@/lib/db-types";
+import { formatDollar } from "@/lib/utils";
+import { NetProfitGraph } from "./net-profit-graph";
 
 export function NetProfitBlock({ profile }: { profile: Profile }) {
-  const net = Number(profile.net_profit)
-  const netLabel = net > 0 ? "profit" : net < 0 ? "loss" : "even"
+  const net = Number(profile.net_profit);
+  const netLabel = net > 0 ? "profit" : net < 0 ? "loss" : "even";
 
   return (
     <div className="space-y-4">
@@ -19,5 +19,5 @@ export function NetProfitBlock({ profile }: { profile: Profile }) {
       </div>
       <NetProfitGraph userId={profile.id} />
     </div>
-  )
+  );
 }

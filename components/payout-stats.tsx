@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { calcPayouts, parseZipson } from "@/lib/utils"
-import { useQueryState } from "nuqs"
-import { gameSchema } from "@/lib/schemas"
-import { PlayerSummary } from "./player-summary"
-import { SlippageInfo } from "./slippage-info"
-import { useMemo } from "react"
-import { DonutCharts } from "./donut-chart"
-import { NegativeChart } from "./negative-chart"
-import { Card, CardContent } from "./ui/card"
+import { calcPayouts, parseZipson } from "@/lib/utils";
+import { useQueryState } from "nuqs";
+import { gameSchema } from "@/lib/schemas";
+import { PlayerSummary } from "./player-summary";
+import { SlippageInfo } from "./slippage-info";
+import { useMemo } from "react";
+import { DonutCharts } from "./donut-chart";
+import { NegativeChart } from "./negative-chart";
+import { Card, CardContent } from "./ui/card";
 
 export function PayoutStats() {
-  const [game] = useQueryState("game", parseZipson)
+  const [game] = useQueryState("game", parseZipson);
 
   const payout = useMemo(() => {
-    const parseResult = gameSchema.safeParse(game)
-    if (!parseResult.success) return
+    const parseResult = gameSchema.safeParse(game);
+    if (!parseResult.success) return;
 
-    const payout = calcPayouts(parseResult.data)
-    payout.players.sort((a, b) => a.name.localeCompare(b.name))
+    const payout = calcPayouts(parseResult.data);
+    payout.players.sort((a, b) => a.name.localeCompare(b.name));
 
-    return payout
-  }, [game])
+    return payout;
+  }, [game]);
 
-  if (!payout) return
+  if (!payout) return;
 
   return (
     <div className="space-y-5">
@@ -45,5 +45,5 @@ export function PayoutStats() {
         ))}
       </div>
     </div>
-  )
+  );
 }

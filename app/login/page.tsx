@@ -1,17 +1,17 @@
-import type { Metadata } from "next"
-import { LoginForm } from "@/components/login-form"
+import type { Metadata } from "next";
+import { LoginForm } from "@/components/login-form";
 
 export const metadata: Metadata = {
   title: "Log in | ChipCount",
-  description: "Log in to ChipCount"
-}
+  description: "Log in to ChipCount",
+};
 
 export default async function LoginPage({
-  searchParams
+  searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string }>;
 }) {
-  const params = await searchParams
+  const params = await searchParams;
   return (
     <main
       id="main-content"
@@ -20,5 +20,5 @@ export default async function LoginPage({
     >
       <LoginForm next={params.next} />
     </main>
-  )
+  );
 }

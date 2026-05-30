@@ -1,5 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MetricsLoading() {
   return (
@@ -13,7 +19,6 @@ export default function MetricsLoading() {
       </div>
 
       {/* Session History button */}
-  
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -30,9 +35,9 @@ export default function MetricsLoading() {
       {/* Charts */}
       {[
         "Current Session",
-        "Your Profit Per Session", 
+        "Your Profit Per Session",
         "Cumulative Profit — This Game",
-        "All-Time Standings"
+        "All-Time Standings",
       ].map((title) => (
         <Card key={title}>
           <CardHeader className="pb-2">
@@ -45,5 +50,5 @@ export default function MetricsLoading() {
         </Card>
       ))}
     </div>
-  )
+  );
 }

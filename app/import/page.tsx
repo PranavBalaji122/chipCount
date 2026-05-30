@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import Link from "next/link"
-import Papa, { ParseResult } from "papaparse"
-import { useRouter } from "next/navigation"
-import { z } from "zod"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import { useQueryState } from "nuqs"
-import { Suspense } from "react"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import Link from "next/link";
+import Papa, { ParseResult } from "papaparse";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useQueryState } from "nuqs";
+import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -25,22 +25,22 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Skeleton } from "@/components/ui/skeleton"
-import { GameSchema, pokerNowSchema } from "@/lib/schemas"
-import { convertPokerNow, parseZipson } from "@/lib/utils"
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GameSchema, pokerNowSchema } from "@/lib/schemas";
+import { convertPokerNow, parseZipson } from "@/lib/utils";
 
-const pokerNowUrlRegex = /^https:\/\/www\.pokernow\.club\/games\/([^/]+)$/
+const pokerNowUrlRegex = /^https:\/\/www\.pokernow\.club\/games\/([^/]+)$/;
 
 const importSchema = z
   .object({
     type: z.enum(["url", "ledger"]),
     url: z.string().optional(),
-    csvData: z.string().optional()
+    csvData: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -49,7 +49,7 @@ const importSchema = z
           data.url &&
           z.string().url().safeParse(data.url).success &&
           pokerNowUrlRegex.test(data.url)
-        )
+        );
       }
       if (data.type === "ledger") {
         return (
@@ -60,66 +60,66 @@ const importSchema = z
           data.csvData.includes("buy_in") &&
           data.csvData.includes("buy_out") &&
           data.csvData.includes("stack")
-        )
+        );
       }
-      return false
+      return false;
     },
     {
-      message: "Invalid input for selected type"
-    }
-  )
-type ImportSchema = z.infer<typeof importSchema>
+      message: "Invalid input for selected type",
+    },
+  );
+type ImportSchema = z.infer<typeof importSchema>;
 
 const processParsedData = (result: ParseResult<unknown>) => {
   if (result.errors.length) {
-    const errorMessages = result.errors.map((e) => e.message).join(", ")
-    throw new Error(`CSV Parsing Error: ${errorMessages}`)
+    const errorMessages = result.errors.map((e) => e.message).join(", ");
+    throw new Error(`CSV Parsing Error: ${errorMessages}`);
   }
 
-  const validation = pokerNowSchema.safeParse(result.data)
+  const validation = pokerNowSchema.safeParse(result.data);
   if (!validation.success)
-    throw new Error(JSON.stringify(validation.error, null, 2))
+    throw new Error(JSON.stringify(validation.error, null, 2));
 
-  return convertPokerNow(validation.data)
-}
+  return convertPokerNow(validation.data);
+};
 
 function ImportPageContent() {
-  const router = useRouter()
-  const [urlParam, setUrlParam] = useQueryState("url", { defaultValue: "" })
+  const router = useRouter();
+  const [urlParam, setUrlParam] = useQueryState("url", { defaultValue: "" });
 
   const form = useForm<ImportSchema>({
     resolver: zodResolver(importSchema),
-    defaultValues: { type: "url", url: urlParam, csvData: "" }
-  })
+    defaultValues: { type: "url", url: urlParam, csvData: "" },
+  });
 
-  const activeTab = form.watch("type")
+  const activeTab = form.watch("type");
 
   const navigateToGame = (convertedGame: GameSchema) =>
     router.push(
-      `/?game=${encodeURIComponent(parseZipson.serialize(convertedGame))}`
-    )
+      `/?game=${encodeURIComponent(parseZipson.serialize(convertedGame))}`,
+    );
 
   const handleError = (error: unknown, field: keyof ImportSchema) => {
     const message =
-      error instanceof Error ? error.message : "An unexpected error occurred."
+      error instanceof Error ? error.message : "An unexpected error occurred.";
     if (field === "url" || field === "csvData")
-      form.setError(field, { type: "manual", message })
-  }
+      form.setError(field, { type: "manual", message });
+  };
 
   const fetchFromUrl = async (url: string) => {
-    const gameId = url.match(pokerNowUrlRegex)![1]
-    const ledgerUrl = `https://www.pokernow.club/games/${gameId}/ledger_${gameId}.csv`
+    const gameId = url.match(pokerNowUrlRegex)![1];
+    const ledgerUrl = `https://www.pokernow.club/games/${gameId}/ledger_${gameId}.csv`;
 
     const response = await fetch(
-      `/api/fetchPokerNowLedger?url=${encodeURIComponent(ledgerUrl)}`
-    )
-    const data = await response.json()
+      `/api/fetchPokerNowLedger?url=${encodeURIComponent(ledgerUrl)}`,
+    );
+    const data = await response.json();
 
     if (!response.ok || data.error)
-      throw new Error(data.error || "Failed to fetch data from server.")
+      throw new Error(data.error || "Failed to fetch data from server.");
 
-    return data.csvData
-  }
+    return data.csvData;
+  };
 
   const parseCsvData = (csvData: string, url: string | undefined) => {
     return new Promise<GameSchema>((resolve, reject) => {
@@ -128,39 +128,39 @@ function ImportPageContent() {
         skipEmptyLines: true,
         complete: (result) => {
           try {
-            const convertedGame = processParsedData(result)
-            if (url != undefined) convertedGame.description = url
-            resolve(convertedGame)
+            const convertedGame = processParsedData(result);
+            if (url != undefined) convertedGame.description = url;
+            resolve(convertedGame);
           } catch (error) {
-            reject(error)
+            reject(error);
           }
         },
         error: (error: Error) =>
-          reject(new Error(`Failed to parse CSV: ${error.message}`))
-      })
-    })
-  }
+          reject(new Error(`Failed to parse CSV: ${error.message}`)),
+      });
+    });
+  };
 
   const onSubmit = async (values: ImportSchema) => {
     try {
-      let csvData: string
+      let csvData: string;
 
       if (values.type === "url") {
-        form.clearErrors("url")
-        setUrlParam(values.url!)
-        csvData = await fetchFromUrl(values.url!)
+        form.clearErrors("url");
+        setUrlParam(values.url!);
+        csvData = await fetchFromUrl(values.url!);
       } else {
-        form.clearErrors("csvData")
-        csvData = values.csvData!
+        form.clearErrors("csvData");
+        csvData = values.csvData!;
       }
 
-      const convertedGame = await parseCsvData(csvData, values.url)
-      navigateToGame(convertedGame)
+      const convertedGame = await parseCsvData(csvData, values.url);
+      navigateToGame(convertedGame);
     } catch (error) {
-      const fieldName = values.type === "url" ? "url" : "csvData"
-      handleError(error, fieldName)
+      const fieldName = values.type === "url" ? "url" : "csvData";
+      handleError(error, fieldName);
     }
-  }
+  };
 
   const renderFormField = () => {
     if (activeTab === "url") {
@@ -179,8 +179,8 @@ function ImportPageContent() {
                   placeholder="https://www.pokernow.club/games/..."
                   {...field}
                   onChange={(e) => {
-                    field.onChange(e)
-                    setUrlParam(e.target.value)
+                    field.onChange(e);
+                    setUrlParam(e.target.value);
                   }}
                 />
               </FormControl>
@@ -188,7 +188,7 @@ function ImportPageContent() {
             </FormItem>
           )}
         />
-      )
+      );
     }
 
     return (
@@ -212,8 +212,8 @@ function ImportPageContent() {
           </FormItem>
         )}
       />
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex w-full flex-col items-center justify-center">
@@ -271,7 +271,7 @@ function ImportPageContent() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 export default function ImportPage() {
@@ -287,5 +287,5 @@ export default function ImportPage() {
         <ImportPageContent />
       </Suspense>
     </main>
-  )
+  );
 }

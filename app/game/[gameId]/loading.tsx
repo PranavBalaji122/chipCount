@@ -1,5 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GameLoading() {
   return (
@@ -30,7 +36,10 @@ export default function GameLoading() {
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex flex-wrap items-center gap-2 rounded border p-3">
+              <div
+                key={i}
+                className="flex flex-wrap items-center gap-2 rounded border p-3"
+              >
                 <Skeleton className="h-5 w-24" />
                 <Skeleton className="h-9 w-24" />
                 <Skeleton className="h-9 w-24" />
@@ -71,5 +80,5 @@ export default function GameLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

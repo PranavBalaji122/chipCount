@@ -1,17 +1,17 @@
-import { PayoutSchema } from "@/lib/schemas"
+import { PayoutSchema } from "@/lib/schemas";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Info } from "lucide-react"
-import { formatDollar } from "@/lib/utils"
+  CardTitle,
+} from "@/components/ui/card";
+import { Info } from "lucide-react";
+import { formatDollar } from "@/lib/utils";
 
 export function SlippageInfo({ payout }: { payout: PayoutSchema }) {
-  const totalCashIn = payout.players.reduce((sum, p) => sum + p.cashIn, 0)
-  const totalCashOut = payout.players.reduce((sum, p) => sum + p.cashOut, 0)
+  const totalCashIn = payout.players.reduce((sum, p) => sum + p.cashIn, 0);
+  const totalCashOut = payout.players.reduce((sum, p) => sum + p.cashOut, 0);
 
   return (
     <div className="flex items-center justify-center">
@@ -39,7 +39,7 @@ export function SlippageInfo({ payout }: { payout: PayoutSchema }) {
               <div className="font-medium">
                 Difference: {formatDollar(Math.abs(payout.slippage))} (
                 {formatDollar(
-                  Math.abs(payout.slippage) / payout.players.length
+                  Math.abs(payout.slippage) / payout.players.length,
                 )}{" "}
                 per player)
               </div>
@@ -48,5 +48,5 @@ export function SlippageInfo({ payout }: { payout: PayoutSchema }) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
