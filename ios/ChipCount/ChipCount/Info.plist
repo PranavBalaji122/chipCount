@@ -35,6 +35,8 @@
 	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXJ3b2J1eGFtcnhhc2Fwd3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDM0MjksImV4cCI6MjA4NzExOTQyOX0.JnJBIq7ohfWX5O5KUbLVlnTHOTJ-segSlNZOz9vlPZ4</string>
 	<key>SUPABASE_URL</key>
 	<string>https://yburwobuxamrxasapwyo.supabase.co</string>
+	<key>UILaunchScreen</key>
+	<dict/>
 	<key>WEB_BASE_URL</key>
 	<string>http://localhost:3000</string>
 </dict>

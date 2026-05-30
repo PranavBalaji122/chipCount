@@ -29,6 +29,7 @@ targets:
         WEB_BASE_URL: http://localhost:3000
         SUPABASE_URL: https://yburwobuxamrxasapwyo.supabase.co
         NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXJ3b2J1eGFtcnhhc2Fwd3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDM0MjksImV4cCI6MjA4NzExOTQyOX0.JnJBIq7ohfWX5O5KUbLVlnTHOTJ-segSlNZOz9vlPZ4
+        UILaunchScreen: {}
         CFBundleURLTypes:
           - CFBundleURLName: com.pranavbalaji.ChipCount.auth
             CFBundleURLSchemes:
