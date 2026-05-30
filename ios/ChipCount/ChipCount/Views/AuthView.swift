@@ -29,19 +29,6 @@ struct AuthView: View {
         Spacer()
 
         VStack(spacing: 16) {
-          SignInWithAppleButton(.signIn) { request in
-            authStore.prepareAppleRequest(request)
-          } onCompletion: { result in
-            Task {
-              isWorking = true
-              await authStore.handleAppleCompletion(result)
-              isWorking = false
-            }
-          }
-          .signInWithAppleButtonStyle(.black)
-          .frame(height: 56)
-          .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-          .disabled(isWorking)
 
           Button {
             Task {

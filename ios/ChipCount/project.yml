@@ -34,11 +34,7 @@ targets:
           - CFBundleURLName: com.pranavbalaji.ChipCount.auth
             CFBundleURLSchemes:
               - chipcount
-    entitlements:
-      path: ChipCount/ChipCount.entitlements
-      properties:
-        com.apple.developer.applesignin:
-          - Default
+
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pranavbalaji.ChipCount
