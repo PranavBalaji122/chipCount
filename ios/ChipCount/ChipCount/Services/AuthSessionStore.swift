@@ -25,7 +25,7 @@ final class AuthSessionStore: ObservableObject {
 
     do {
       let user = try await supabase.auth.user()
-      currentUser = AuthenticatedUser(id: String(describing: user.id), email: user.email)
+      currentUser = AuthenticatedUser(id: user.id.uuidString.lowercased(), email: user.email)
       try await refreshProfile(displayNameFallback: nil)
     } catch {
       currentUser = nil
@@ -38,7 +38,7 @@ final class AuthSessionStore: ObservableObject {
     errorMessage = nil
     do {
       let session = try await supabase.auth.signIn(email: email, password: password)
-      currentUser = AuthenticatedUser(id: String(describing: session.user.id), email: session.user.email)
+      currentUser = AuthenticatedUser(id: session.user.id.uuidString.lowercased(), email: session.user.email)
       try await refreshProfile(displayNameFallback: nil)
     } catch {
       errorMessage = error.localizedDescription
@@ -118,7 +118,7 @@ final class AuthSessionStore: ObservableObject {
       let fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
         .compactMap { $0 }
         .joined(separator: " ")
-      currentUser = AuthenticatedUser(id: String(describing: session.user.id), email: session.user.email)
+      currentUser = AuthenticatedUser(id: session.user.id.uuidString.lowercased(), email: session.user.email)
       try await refreshProfile(displayNameFallback: fullName.isEmpty ? nil : fullName)
     } catch {
       errorMessage = error.localizedDescription
