@@ -67,6 +67,15 @@ struct GameService {
     return game
   }
 
+  func renameTable(gameId: String, hostId: String, description: String?) async throws {
+    try await supabase
+      .from("games")
+      .update(GameDescriptionPatch(description: description?.nilIfBlank))
+      .eq("id", value: gameId)
+      .eq("host_id", value: hostId)
+      .execute()
+  }
+
   func loadGame(gameId: String) async throws -> GameSnapshot {
     async let game: Game = supabase
       .from("games")
@@ -187,9 +196,19 @@ struct GameService {
   }
 
   func endTable(gameId: String) async throws {
-    try await supabase
-      .rpc("end_table", params: ["p_game_id": gameId])
-      .execute()
+    do {
+      try await supabase
+        .rpc("close_session", params: ["p_game_id": gameId, "p_final_status": "ended"])
+        .execute()
+
+      try? await insertDebtsForGame(gameId: gameId)
+    } catch {
+      try await supabase
+        .from("games")
+        .update(GameStatusPatch(status: .ended))
+        .eq("id", value: gameId)
+        .execute()
+    }
   }
 
   func loadMetrics(gameId: String) async throws -> GameMetrics {
@@ -259,6 +278,56 @@ struct GameService {
     }
 
     return PayoutCalculator.calculate(players: players + guests)
+  }
+
+  private func insertDebtsForGame(gameId: String) async throws {
+    let players: [DebtPlayer] = try await supabase
+      .from("game_players")
+      .select("user_id, cash_in, cash_out")
+      .eq("game_id", value: gameId)
+      .eq("status", value: GamePlayerStatus.approved.rawValue)
+      .execute()
+      .value
+
+    let debts = Self.debts(for: players)
+    guard !debts.isEmpty else { return }
+
+    try await supabase
+      .rpc("insert_game_debts", params: InsertGameDebtsParams(pGameId: gameId, pDebts: debts))
+      .execute()
+  }
+
+  private static func debts(for players: [DebtPlayer]) -> [NewDebt] {
+    guard players.count >= 2 else { return [] }
+
+    let slippage = players.reduce(0) { $0 + $1.cashIn - $1.cashOut }
+    var balances = players
+      .map { DebtBalance(userId: $0.userId, balance: $0.cashOut - $0.cashIn + slippage / Double(players.count)) }
+      .sorted { $0.balance < $1.balance }
+    var debts: [NewDebt] = []
+    var left = 0
+    var right = balances.count - 1
+
+    while left < right {
+      let payment = min(-balances[left].balance, balances[right].balance)
+
+      if payment > 1e-9 {
+        debts.append(
+          NewDebt(
+            creditorId: balances[right].userId,
+            debtorId: balances[left].userId,
+            amount: (payment * 100).rounded() / 100
+          )
+        )
+        balances[left].balance += payment
+        balances[right].balance -= payment
+      }
+
+      if abs(balances[left].balance) < 1e-9 { left += 1 }
+      if abs(balances[right].balance) < 1e-9 { right -= 1 }
+    }
+
+    return debts
   }
 }
 
@@ -333,6 +402,53 @@ private struct NewGamePlayer: Encodable {
     case status
     case requestedCashIn = "requested_cash_in"
     case requestedCashOut = "requested_cash_out"
+  }
+}
+
+private struct GameDescriptionPatch: Encodable {
+  let description: String?
+}
+
+private struct GameStatusPatch: Encodable {
+  let status: GameStatus
+}
+
+private struct DebtPlayer: Decodable {
+  let userId: String
+  let cashIn: Double
+  let cashOut: Double
+
+  enum CodingKeys: String, CodingKey {
+    case userId = "user_id"
+    case cashIn = "cash_in"
+    case cashOut = "cash_out"
+  }
+}
+
+private struct DebtBalance {
+  let userId: String
+  var balance: Double
+}
+
+private struct NewDebt: Encodable {
+  let creditorId: String
+  let debtorId: String
+  let amount: Double
+
+  enum CodingKeys: String, CodingKey {
+    case creditorId = "creditor_id"
+    case debtorId = "debtor_id"
+    case amount
+  }
+}
+
+private struct InsertGameDebtsParams: Encodable {
+  let pGameId: String
+  let pDebts: [NewDebt]
+
+  enum CodingKeys: String, CodingKey {
+    case pGameId = "p_game_id"
+    case pDebts = "p_debts"
   }
 }
 

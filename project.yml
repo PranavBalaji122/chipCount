@@ -46,6 +46,9 @@ targets:
     platform: iOS
     sources:
       - Tests/ChipCountCoreTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - package: ChipCountCore
       - target: ChipCount
