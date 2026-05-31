@@ -7,13 +7,14 @@ struct TablesView: View {
   @State private var selectedGame: Game?
   @State private var showingCreate = false
   @State private var showingJoin = false
+  @State private var gamePendingDeletion: Game?
+  @State private var gamePendingRename: Game?
   @State private var errorMessage: String?
   @State private var isLoading = false
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        // Greeting
+    List {
+      Section {
         VStack(alignment: .leading, spacing: 4) {
           if let name = authStore.profile?.displayName, !name.isEmpty {
             Text("welcom welcome, \(name)")
@@ -22,12 +23,12 @@ struct TablesView: View {
             Text("welcom welcome")
               .font(.largeTitle.bold())
           }
-
         }
-        .padding(.horizontal)
-        .padding(.top, 8)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+      }
 
-        // Action Tiles
+      Section {
         HStack(spacing: 16) {
           Button {
             showingCreate = true
@@ -81,53 +82,55 @@ struct TablesView: View {
           }
           .buttonStyle(.plain)
         }
-        .padding(.horizontal)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+      }
 
-        // Active Tables
-        VStack(alignment: .leading, spacing: 12) {
-          Text("ACTIVE TABLES")
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal)
-          
-          if memberships.isEmpty && !isLoading {
-            ContentUnavailableView(
-              "No active tables",
-              systemImage: "tablecells",
-              description: Text("Create a table or join one with a game ID.")
-            )
-            .padding(.top, 20)
-          } else {
-            VStack(spacing: 0) {
-              ForEach(Array(memberships.enumerated()), id: \.element.id) { index, membership in
-                Button {
-                  selectedGame = membership.game
+      Section("ACTIVE TABLES") {
+        if memberships.isEmpty && !isLoading {
+          ContentUnavailableView(
+            "No active tables",
+            systemImage: "tablecells",
+            description: Text("Create a table or join one with a game ID.")
+          )
+          .listRowBackground(Color.clear)
+        } else {
+          ForEach(memberships) { membership in
+            Button {
+              selectedGame = membership.game
+            } label: {
+              TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
+            }
+            .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+              if isHost(membership) {
+                Button(role: .destructive) {
+                  gamePendingDeletion = membership.game
                 } label: {
-                  TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
+                  Label("Delete", systemImage: "trash")
                 }
-                .buttonStyle(.plain)
-                
-                if index < memberships.count - 1 {
-                  Divider()
-                    .padding(.leading, 16)
+
+                Button {
+                  gamePendingRename = membership.game
+                } label: {
+                  Label("Rename", systemImage: "pencil")
                 }
+                .tint(.blue)
               }
             }
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.03), radius: 8, y: 2)
-            .padding(.horizontal)
           }
         }
+      }
 
-        if let errorMessage {
+      if let errorMessage {
+        Section {
           Text(errorMessage)
             .foregroundStyle(.red)
-            .padding(.horizontal)
         }
       }
-      .padding(.bottom, 24)
     }
+    .listStyle(.insetGrouped)
+    .scrollContentBackground(.hidden)
     .background(Color(.systemGroupedBackground))
     .navigationTitle("Tables")
     .toolbar(.hidden, for: .navigationBar)
@@ -146,6 +149,26 @@ struct TablesView: View {
       JoinTableSheet { code, buyIn in
         await joinTable(code: code, buyIn: buyIn)
       }
+    }
+    .sheet(item: $gamePendingRename) { game in
+      RenameTableSheet(game: game) { name in
+        await renameTable(game: game, name: name)
+      }
+    }
+    .alert(
+      "Delete Table?",
+      isPresented: Binding(
+        get: { gamePendingDeletion != nil },
+        set: { if !$0 { gamePendingDeletion = nil } }
+      ),
+      presenting: gamePendingDeletion
+    ) { game in
+      Button("Delete", role: .destructive) {
+        Task { await deleteTable(game: game) }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: { game in
+      Text("Delete \(game.description ?? "Poker Table") and all of its players, sessions, and debts? This cannot be undone.")
     }
     .navigationDestination(item: $selectedGame) { game in
       GameRoomView(gameId: game.id)
@@ -182,6 +205,38 @@ struct TablesView: View {
     }
   }
 
+  private func renameTable(game: Game, name: String) async {
+    guard let userId = authStore.currentUser?.id, game.hostId == userId else { return }
+
+    do {
+      try await service.renameTable(gameId: game.id, hostId: userId, description: name)
+      gamePendingRename = nil
+      await loadTables()
+    } catch is CancellationError {
+      // Ignore
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func deleteTable(game: Game) async {
+    guard let userId = authStore.currentUser?.id, game.hostId == userId else { return }
+
+    do {
+      try await service.deleteTable(gameId: game.id)
+      gamePendingDeletion = nil
+      await loadTables()
+    } catch is CancellationError {
+      // Ignore
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  private func isHost(_ membership: TableMembership) -> Bool {
+    membership.game.hostId == authStore.currentUser?.id
+  }
+
   private func joinTable(code: String, buyIn: Double) async {
     guard let userId = authStore.currentUser?.id else { return }
 
@@ -194,6 +249,49 @@ struct TablesView: View {
       // Ignore
     } catch {
       errorMessage = error.localizedDescription
+    }
+  }
+}
+
+private struct RenameTableSheet: View {
+  @Environment(\.dismiss) private var dismiss
+  @State private var tableName: String
+  @State private var isSubmitting = false
+  let onRename: (String) async -> Void
+
+  init(game: Game, onRename: @escaping (String) async -> Void) {
+    _tableName = State(initialValue: game.description ?? "")
+    self.onRename = onRename
+  }
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section {
+          TextField("Friday Night Poker", text: $tableName)
+        } header: {
+          Text("Table Name")
+        } footer: {
+          Text("Leave this blank to use the default Poker Table name.")
+        }
+      }
+      .navigationTitle("Rename Table")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") { dismiss() }
+            .disabled(isSubmitting)
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Save") {
+            Task {
+              isSubmitting = true
+              await onRename(tableName)
+              isSubmitting = false
+            }
+          }
+          .disabled(isSubmitting)
+        }
+      }
     }
   }
 }

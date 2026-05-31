@@ -67,6 +67,21 @@ struct GameService {
     return game
   }
 
+  func renameTable(gameId: String, hostId: String, description: String?) async throws {
+    try await supabase
+      .from("games")
+      .update(GameDescriptionPatch(description: description?.nilIfBlank))
+      .eq("id", value: gameId)
+      .eq("host_id", value: hostId)
+      .execute()
+  }
+
+  func deleteTable(gameId: String) async throws {
+    try await supabase
+      .rpc("delete_table", params: ["p_game_id": gameId])
+      .execute()
+  }
+
   func loadGame(gameId: String) async throws -> GameSnapshot {
     async let game: Game = supabase
       .from("games")
@@ -334,6 +349,10 @@ private struct NewGamePlayer: Encodable {
     case requestedCashIn = "requested_cash_in"
     case requestedCashOut = "requested_cash_out"
   }
+}
+
+private struct GameDescriptionPatch: Encodable {
+  let description: String?
 }
 
 struct PlayerPatch: Encodable {
