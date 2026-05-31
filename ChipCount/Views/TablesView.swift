@@ -163,12 +163,12 @@ struct TablesView: View {
       ),
       presenting: gamePendingDeletion
     ) { game in
-      Button("Delete", role: .destructive) {
-        Task { await deleteTable(game: game) }
+      Button("End Table", role: .destructive) {
+        Task { await endTable(game: game) }
       }
       Button("Cancel", role: .cancel) {}
     } message: { game in
-      Text("Delete \(game.description ?? "Poker Table") and all of its players, sessions, and debts? This cannot be undone.")
+      Text("End \(game.description ?? "Poker Table") for everyone and remove it from your active tables? This cannot be undone.")
     }
     .navigationDestination(item: $selectedGame) { game in
       GameRoomView(gameId: game.id)
@@ -219,11 +219,11 @@ struct TablesView: View {
     }
   }
 
-  private func deleteTable(game: Game) async {
+  private func endTable(game: Game) async {
     guard let userId = authStore.currentUser?.id, game.hostId == userId else { return }
 
     do {
-      try await service.deleteTable(gameId: game.id)
+      try await service.endTable(gameId: game.id)
       gamePendingDeletion = nil
       await loadTables()
     } catch is CancellationError {

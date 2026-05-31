@@ -76,12 +76,6 @@ struct GameService {
       .execute()
   }
 
-  func deleteTable(gameId: String) async throws {
-    try await supabase
-      .rpc("delete_table", params: ["p_game_id": gameId])
-      .execute()
-  }
-
   func loadGame(gameId: String) async throws -> GameSnapshot {
     async let game: Game = supabase
       .from("games")
