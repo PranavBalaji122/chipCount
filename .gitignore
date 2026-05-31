@@ -5,18 +5,6 @@ node_modules/
 .env*
 .DS_Store
 
-# Xcode
-xcuserdata/
-*.xcuserstate
-DerivedData/
-.build/
-
-# XcodeGen output (generated)
-ios/ChipCount/ChipCount.xcodeproj/
-
-# SwiftPM/Xcode generated
-ios/ChipCount/.swiftpm/
-
 # Next.js
 .next/
 out/
