@@ -37,7 +37,8 @@ Native SwiftUI app scaffold for ChipCount.
 
 Run migrations through `supabase/migrations/00018_transfer_host_rpc.sql` before using the app. The iOS client calls:
 
-- `close_session_with_debts`
+- `close_session`
+- `insert_game_debts`
 - `reopen_session`
 - `delete_session_at`
 - `transfer_host`
