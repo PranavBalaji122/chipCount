@@ -1,5 +1,4 @@
 {
-  "originHash" : "2a91e3546f43bc164ee05dda9b5c89d2ca4c8cb899dfc213b21c2a943a41b047",
   "pins" : [
     {
       "identity" : "supabase-swift",
@@ -65,5 +64,5 @@
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }

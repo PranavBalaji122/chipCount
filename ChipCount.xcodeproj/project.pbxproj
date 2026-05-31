@@ -57,9 +57,9 @@
 		918FAE2624A08FBB1CDFA87A /* ChipCount.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ChipCount.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9797A023B0BF7B943E233321 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AD9C8CF75FB39FAEFB7186C2 /* PayoutCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayoutCalculatorTests.swift; sourceTree = "<group>"; };
-		B55220EB80A67C231168D3A5 /* ChipCount */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ChipCount; path = .; sourceTree = SOURCE_ROOT; };
 		C5B88EEE3B0DE99EA51F1CC6 /* TablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TablesView.swift; sourceTree = "<group>"; };
 		D2BB14B9895FCCCAA87DB177 /* SupabaseClientProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClientProvider.swift; sourceTree = "<group>"; };
+		F94FDFA9C745FFBB1E414406 /* chipCount */ = {isa = PBXFileReference; lastKnownFileType = folder; name = chipCount; path = .; sourceTree = SOURCE_ROOT; };
 		FDF554A6217639A66BBFBB56 /* ChipCountModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipCountModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,7 +87,7 @@
 		2A2D4291F0B80BBFBFF2BDAA /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				B55220EB80A67C231168D3A5 /* ChipCount */,
+				F94FDFA9C745FFBB1E414406 /* chipCount */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
