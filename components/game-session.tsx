@@ -78,12 +78,14 @@ function parseCashInput(value: string): number | null {
 export function GameSession({
   game,
   initialPlayers,
+  initialGuests,
   currentUserId,
   isHost: _initialIsHost,
   baseUrl
 }: {
   game: Game
   initialPlayers: PlayerRow[]
+  initialGuests: GuestPlayer[]
   currentUserId: string
   isHost: boolean
   baseUrl?: string
@@ -102,7 +104,7 @@ export function GameSession({
   const [copyFeedback, setCopyFeedback] = useState("")
 
   // Guest functionality — persisted to game_guests table
-  const [guests, setGuests] = useState<GuestPlayer[]>([])
+  const [guests, setGuests] = useState<GuestPlayer[]>(initialGuests)
   const [guestForm, setGuestForm] = useState({
     name: "",
     cash_in: "",

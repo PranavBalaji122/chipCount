@@ -19,8 +19,8 @@ export default async function GamePage({
     notFound()
   }
 
-  // Run game and players queries in parallel
-  const [gameResult, playersResult] = await Promise.all([
+  // Run game, players, and guests queries in parallel
+  const [gameResult, playersResult, guestsResult] = await Promise.all([
     supabase
       .from("games")
       .select("id, short_code, host_id, description, status")
@@ -31,11 +31,16 @@ export default async function GamePage({
       .select(
         "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
       )
+      .eq("game_id", gameId),
+    supabase
+      .from("game_guests")
+      .select("id, name, cash_in, cash_out")
       .eq("game_id", gameId)
   ])
 
   const { data: game, error: gameError } = gameResult
   const { data: rawPlayers, error: playersError } = playersResult
+  const { data: rawGuests, error: guestsError } = guestsResult
 
   if (gameError || !game) {
     notFound()
@@ -43,6 +48,10 @@ export default async function GamePage({
 
   if (playersError) {
     console.error("Error fetching players:", playersError)
+  }
+
+  if (guestsError) {
+    console.error("Error fetching guests:", guestsError)
   }
 
   const players =
@@ -73,6 +82,21 @@ export default async function GamePage({
       }
     ) ?? []
 
+  const guests =
+    rawGuests?.map(
+      (guest: {
+        id: string
+        name: string
+        cash_in: number | null
+        cash_out: number | null
+      }) => ({
+        id: guest.id,
+        name: guest.name,
+        cash_in: Number(guest.cash_in ?? 0),
+        cash_out: Number(guest.cash_out ?? 0)
+      })
+    ) ?? []
+
   const isHost = game.host_id === user.id
 
   const headerStore = await headers()
@@ -84,6 +108,7 @@ export default async function GamePage({
     <GameSession
       game={game}
       initialPlayers={players}
+      initialGuests={guests}
       currentUserId={user.id}
       isHost={isHost}
       baseUrl={baseUrl}
