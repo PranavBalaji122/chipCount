@@ -29,6 +29,16 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { PayoutStatsView } from "./payout-stats-view"
 import {
@@ -93,6 +103,8 @@ export function GameSession({
   const [transferring, setTransferring] = useState(false)
   const [transferConfirm, setTransferConfirm] = useState(false)
   const [copyFeedback, setCopyFeedback] = useState("")
+  const [endGameDialogOpen, setEndGameDialogOpen] = useState(false)
+  const [closeSessionDialogOpen, setCloseSessionDialogOpen] = useState(false)
 
   // Guest functionality — persisted to game_guests table
   const [guests, setGuests] = useState<GuestPlayer[]>([])
@@ -672,21 +684,67 @@ export function GameSession({
           </div>
           <div className="flex items-center gap-2">
             {isHost && (
-              <Button
-                variant={isClosed ? "outline" : "secondary"}
-                size="sm"
-                onClick={handleToggleClose}
-                disabled={togglingClose}
-              >
-                {togglingClose ? (
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                ) : isClosed ? (
-                  <LockOpen className="mr-1 h-4 w-4" />
-                ) : (
-                  <Lock className="mr-1 h-4 w-4" />
-                )}
-                {isClosed ? "Reopen Session" : "Close Session"}
-              </Button>
+              isClosed ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleClose}
+                  disabled={togglingClose}
+                >
+                  {togglingClose ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LockOpen className="mr-1 h-4 w-4" />
+                  )}
+                  Reopen Session
+                </Button>
+              ) : (
+                <AlertDialog
+                  open={closeSessionDialogOpen}
+                  onOpenChange={(next) => {
+                    if (!togglingClose) setCloseSessionDialogOpen(next)
+                  }}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                    >
+                      <Lock className="mr-1 h-4 w-4" />
+                      Close Session
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Close this session?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Closing the session will lock all player amounts — no
+                        edits can be made until you reopen it. Players will still
+                        be able to view the session.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={togglingClose}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <Button
+                        variant="default"
+                        disabled={togglingClose}
+                        onClick={async () => {
+                          await handleToggleClose()
+                          setCloseSessionDialogOpen(false)
+                        }}
+                      >
+                        {togglingClose && (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        )}
+                        {togglingClose ? "Closing…" : "Yes, close session"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )
             )}
             <Button variant="outline" size="sm" onClick={copyGameLink}>
               <Copy className="mr-1 h-4 w-4" />
@@ -1418,14 +1476,44 @@ export function GameSession({
             guests.filter((g) => g.cash_in !== null || g.cash_out !== null)
               .length >=
             2 && (
-            <Button
-              onClick={handleEndGame}
-              disabled={ending}
-              variant="destructive"
+            <AlertDialog
+              open={endGameDialogOpen}
+              onOpenChange={(next) => {
+                if (!ending) setEndGameDialogOpen(next)
+              }}
             >
-              {ending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              End Game
-            </Button>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" type="button">
+                  End Game
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>End this game?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to end this game
+                    {game.description ? ` (${game.description})` : ""}? This
+                    will finalize all payouts, update profits and debts, and
+                    remove the game from the dashboard. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={ending}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    disabled={ending}
+                    onClick={() => void handleEndGame()}
+                  >
+                    {ending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {ending ? "Ending…" : "Yes, end game"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       )}
