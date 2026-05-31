@@ -39,7 +39,6 @@ Run migrations through `supabase/migrations/00018_transfer_host_rpc.sql` before 
 
 - `close_session_with_debts`
 - `reopen_session`
-- `end_table`
 - `delete_session_at`
 - `transfer_host`
 

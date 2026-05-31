@@ -3,6 +3,7 @@ import SwiftUI
 
 struct GameRoomView: View {
   @EnvironmentObject private var authStore: AuthSessionStore
+  @Environment(\.dismiss) private var dismiss
   @Environment(\.scenePhase) private var scenePhase
   @State private var service = GameService()
   @State private var snapshot: GameSnapshot?
@@ -13,6 +14,8 @@ struct GameRoomView: View {
   @State private var guestCashIn = 0.0
   @State private var guestCashOut = 0.0
   @State private var transferCandidate: GamePlayer?
+  @State private var showingCloseSessionConfirmation = false
+  @State private var showingEndGameConfirmation = false
   @State private var realtimeTask: Task<Void, Never>?
 
   let gameId: String
@@ -79,6 +82,20 @@ struct GameRoomView: View {
       }
     } message: { player in
       Text("\(player.displayName ?? String(player.userId.prefix(8))) will immediately control this table.")
+    }
+    .confirmationDialog("Close Session?", isPresented: $showingCloseSessionConfirmation) {
+      Button("Close Session") {
+        Task { await closeSession() }
+      }
+    } message: {
+      Text("This saves the current results and debts. You can reopen the session later.")
+    }
+    .confirmationDialog("End Game?", isPresented: $showingEndGameConfirmation) {
+      Button("End Game", role: .destructive) {
+        Task { await endGame() }
+      }
+    } message: {
+      Text("This saves the final results and debts, then removes the game from your tables. This cannot be reopened.")
     }
   }
 
@@ -249,7 +266,7 @@ struct GameRoomView: View {
       Section {
         if snapshot.game.status == .active {
           Button {
-            Task { await closeSession() }
+            showingCloseSessionConfirmation = true
           } label: {
             Label("Close Session", systemImage: "lock")
           }
@@ -264,9 +281,9 @@ struct GameRoomView: View {
         }
 
         Button(role: .destructive) {
-          Task { await endTable() }
+          showingEndGameConfirmation = true
         } label: {
-          Label("End Table", systemImage: "xmark.circle")
+          Label("End Game", systemImage: "xmark.circle")
         }
       }
 
@@ -408,10 +425,10 @@ struct GameRoomView: View {
     }
   }
 
-  private func endTable() async {
+  private func endGame() async {
     do {
-      try await service.endTable(gameId: gameId)
-      await load()
+      try await service.endGame(gameId: gameId)
+      dismiss()
     } catch {
       errorMessage = error.localizedDescription
     }
