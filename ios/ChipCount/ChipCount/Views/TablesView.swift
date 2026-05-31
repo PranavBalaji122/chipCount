@@ -65,8 +65,8 @@ struct TablesView: View {
       await loadTables()
     }
     .sheet(isPresented: $showingCreate) {
-      CreateTableSheet { name, guests in
-        await createTable(name: name, guests: guests)
+      CreateTableSheet { name in
+        await createTable(name: name)
       }
     }
     .sheet(isPresented: $showingJoin) {
@@ -92,11 +92,11 @@ struct TablesView: View {
     }
   }
 
-  private func createTable(name: String?, guests: [String]) async {
+  private func createTable(name: String?) async {
     guard let userId = authStore.currentUser?.id else { return }
 
     do {
-      let game = try await service.createTable(hostId: userId, description: name, guests: guests)
+      let game = try await service.createTable(hostId: userId, description: name)
       showingCreate = false
       await loadTables()
       selectedGame = game
@@ -168,10 +168,8 @@ private struct TableRow: View {
 private struct CreateTableSheet: View {
   @Environment(\.dismiss) private var dismiss
   @State private var tableName = ""
-  @State private var guestName = ""
-  @State private var guests: [String] = []
   @State private var isSubmitting = false
-  let onCreate: (String?, [String]) async -> Void
+  let onCreate: (String?) async -> Void
 
   var body: some View {
     NavigationStack {
@@ -183,38 +181,6 @@ private struct CreateTableSheet: View {
         } footer: {
           Text("Optional. Players will see this before joining.")
         }
-        
-        Section {
-          HStack {
-            TextField("Guest name", text: $guestName)
-            Button {
-              let trimmed = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
-              if !trimmed.isEmpty, !guests.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
-                guests.append(trimmed)
-                guestName = ""
-              }
-            } label: {
-              Image(systemName: "person.badge.plus")
-            }
-            .disabled(guestName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-          }
-          
-          ForEach(guests, id: \.self) { guest in
-            HStack {
-              Text(guest)
-              Spacer()
-              Button(role: .destructive) {
-                guests.removeAll { $0 == guest }
-              } label: {
-                Image(systemName: "trash")
-              }
-            }
-          }
-        } header: {
-          Text("Guests")
-        } footer: {
-          Text("Optional. Pre-add guests who don't have accounts.")
-        }
       }
       .navigationTitle("New Table")
       .toolbar {
@@ -225,12 +191,7 @@ private struct CreateTableSheet: View {
           Button("Create") {
             Task {
               isSubmitting = true
-              var finalGuests = guests
-              let trimmed = guestName.trimmingCharacters(in: .whitespacesAndNewlines)
-              if !trimmed.isEmpty, !finalGuests.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
-                finalGuests.append(trimmed)
-              }
-              await onCreate(tableName, finalGuests)
+              await onCreate(tableName)
               isSubmitting = false
             }
           }
