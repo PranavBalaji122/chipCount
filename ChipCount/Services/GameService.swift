@@ -67,6 +67,15 @@ struct GameService {
     return game
   }
 
+  func renameTable(gameId: String, hostId: String, description: String?) async throws {
+    try await supabase
+      .from("games")
+      .update(GameDescriptionPatch(description: description?.nilIfBlank))
+      .eq("id", value: gameId)
+      .eq("host_id", value: hostId)
+      .execute()
+  }
+
   func loadGame(gameId: String) async throws -> GameSnapshot {
     async let game: Game = supabase
       .from("games")
@@ -204,6 +213,10 @@ struct GameService {
     await insertDebts(gameId: gameId)
   }
 
+  func endTable(gameId: String) async throws {
+    try await endGame(gameId: gameId)
+  }
+
   func loadMetrics(gameId: String) async throws -> GameMetrics {
     async let playerSnapshots: [SessionSnapshot] = supabase
       .from("session_snapshots")
@@ -293,6 +306,7 @@ struct GameService {
 
     return PayoutCalculator.calculate(players: players + guests)
   }
+
 }
 
 private struct RawMembership: Decodable {
@@ -367,6 +381,10 @@ private struct NewGamePlayer: Encodable {
     case requestedCashIn = "requested_cash_in"
     case requestedCashOut = "requested_cash_out"
   }
+}
+
+private struct GameDescriptionPatch: Encodable {
+  let description: String?
 }
 
 private struct GameStatusPatch: Encodable {
