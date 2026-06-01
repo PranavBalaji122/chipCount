@@ -234,9 +234,30 @@ struct GameService {
       .execute()
       .value
 
-    return try await GameMetrics(
-      playerSnapshots: playerSnapshots,
-      guestSnapshots: guestSnapshots
+    let loadedPlayerSnapshots = try await playerSnapshots
+    let loadedGuestSnapshots = try await guestSnapshots
+    let userIds = Array(Set(loadedPlayerSnapshots.map(\.userId)))
+    let profiles: [SnapshotProfile]
+
+    if userIds.isEmpty {
+      profiles = []
+    } else {
+      profiles = try await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", values: userIds)
+        .execute()
+        .value
+    }
+
+    return GameMetrics(
+      playerSnapshots: loadedPlayerSnapshots,
+      guestSnapshots: loadedGuestSnapshots,
+      displayNamesByUserId: Dictionary(
+        uniqueKeysWithValues: profiles.compactMap { profile in
+          profile.displayName.map { (profile.id, $0) }
+        }
+      )
     )
   }
 
@@ -354,6 +375,16 @@ private struct ProfileName: Decodable {
   enum CodingKeys: String, CodingKey {
     case displayName = "display_name"
     case venmoHandle = "venmo_handle"
+  }
+}
+
+private struct SnapshotProfile: Decodable {
+  let id: String
+  let displayName: String?
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case displayName = "display_name"
   }
 }
 
