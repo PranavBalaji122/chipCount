@@ -16,11 +16,12 @@ struct TablesView: View {
     List {
       Section {
         VStack(alignment: .leading, spacing: 4) {
-          if let name = authStore.profile?.displayName, !name.isEmpty {
-            Text("welcom welcome, \(name)")
+          if let name = authStore.profile?.displayName,
+             let firstName = name.split(whereSeparator: \.isWhitespace).first {
+            Text("Welcome, \(firstName)")
               .font(.largeTitle.bold())
           } else {
-            Text("welcom welcome")
+            Text("Welcome")
               .font(.largeTitle.bold())
           }
         }
