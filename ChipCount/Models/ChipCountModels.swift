@@ -203,8 +203,5 @@ struct GuestSessionSnapshot: Codable, Equatable, Identifiable {
 struct GameMetrics: Equatable {
   let playerSnapshots: [SessionSnapshot]
   let guestSnapshots: [GuestSessionSnapshot]
-
-  var sessionTimestamps: [String] {
-    Array(Set(playerSnapshots.map(\.snapshottedAt) + guestSnapshots.map(\.snapshottedAt))).sorted()
-  }
+  let displayNamesByUserId: [String: String]
 }

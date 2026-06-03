@@ -121,15 +121,18 @@ struct GameRoomView: View {
             .clipShape(Capsule())
         }
 
-        ShareLink(item: inviteURL(for: snapshot.game)) {
-          Label("Share Invite", systemImage: "square.and.arrow.up")
-        }
+      }
+    }
 
-        NavigationLink {
-          MetricsView(gameId: snapshot.game.id, isHost: isHost(snapshot))
-        } label: {
-          Label("Metrics", systemImage: "chart.line.uptrend.xyaxis")
-        }
+    Section {
+      ShareLink(item: inviteURL(for: snapshot.game)) {
+        Label("Share Invite", systemImage: "square.and.arrow.up")
+      }
+
+      NavigationLink {
+        MetricsView(gameId: snapshot.game.id, isHost: isHost(snapshot))
+      } label: {
+        Label("Metrics", systemImage: "chart.line.uptrend.xyaxis")
       }
     }
   }
