@@ -31,7 +31,7 @@ export function GameForm() {
   const [game, setGame] = useQueryState("game", {
     ...parseZipson,
     history: "replace",
-    throttleMs: 5000
+    throttleMs: 800
   })
 
   const form = useForm<GameSchema>({

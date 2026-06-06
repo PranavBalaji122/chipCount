@@ -26,12 +26,18 @@ export default function LandingPage() {
           <CardTitle className="text-2xl">ChipCount</CardTitle>
           <CardDescription>
             Track poker games, calculate payouts, and see who&apos;s up over
-            time. Log in to start or join a game.
+            time. Start a quick game with no account, or log in for hosted
+            tables.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Link href="/login">
+        <CardContent className="space-y-3">
+          <Link href="/play">
             <Button className="w-full" size="lg">
+              Quick game (no account)
+            </Button>
+          </Link>
+          <Link href="/login">
+            <Button className="w-full" size="lg" variant="outline">
               Log in
             </Button>
           </Link>
