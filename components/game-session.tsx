@@ -689,7 +689,7 @@ export function GameSession({
             <CardTitle>{game.description || "Game"}</CardTitle>
             <CardDescription>
               Game ID: <span className="font-mono">{game.short_code}</span> —
-              share so others can join
+              anyone can view the live table; sign in to join as a player
               <br />
               Invite link:{" "}
               <span className="font-mono break-all">{inviteUrl}</span>

@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
+import {
+  SpectatorGameView,
+  type SpectatorGameData
+} from "@/components/spectator-game-view"
 
 async function ensureProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -21,7 +25,6 @@ async function ensureProfile(
       display_name: fallbackName
     })
     if (error) {
-      // If this fails, we still allow joining the game; profile can be fixed later.
       console.error("Error ensuring profile in invite route:", error)
     }
   }
@@ -38,13 +41,29 @@ export default async function InvitePage({
     data: { user }
   } = await supabase.auth.getUser()
 
+  const shortCode = code.trim().toLowerCase()
+
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/invite/${code}`)}`)
+    const { data: spectatorData, error } = await supabase.rpc(
+      "get_spectator_game",
+      { p_short_code: shortCode }
+    )
+
+    if (error || !spectatorData) {
+      notFound()
+    }
+
+    return (
+      <main id="main-content" tabIndex={-1}>
+        <SpectatorGameView
+          shortCode={shortCode}
+          initialData={spectatorData as SpectatorGameData}
+        />
+      </main>
+    )
   }
 
   await ensureProfile(supabase, user.id, user.email ?? null)
-
-  const shortCode = code.trim().toLowerCase()
 
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -52,7 +71,7 @@ export default async function InvitePage({
     .eq("short_code", shortCode)
     .single()
 
-  if (gameError || !game || game.status !== "active") {
+  if (gameError || !game) {
     notFound()
   }
 
@@ -67,6 +86,9 @@ export default async function InvitePage({
     redirect(`/game/${game.id}`)
   }
 
+  if (game.status !== "active") {
+    notFound()
+  }
+
   redirect(`/invite/${code}/join`)
 }
-
