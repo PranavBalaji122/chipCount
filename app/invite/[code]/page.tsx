@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
+import {
+  SpectatorGameView,
+  type SpectatorGameData
+} from "@/components/spectator-game-view"
 
 async function ensureProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -21,7 +25,6 @@ async function ensureProfile(
       display_name: fallbackName
     })
     if (error) {
-      // If this fails, we still allow joining the game; profile can be fixed later.
       console.error("Error ensuring profile in invite route:", error)
     }
   }
@@ -38,35 +41,47 @@ export default async function InvitePage({
     data: { user }
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/invite/${code}`)}`)
-  }
-
-  await ensureProfile(supabase, user.id, user.email ?? null)
-
   const shortCode = code.trim().toLowerCase()
 
-  const { data: game, error: gameError } = await supabase
-    .from("games")
-    .select("id, status")
-    .eq("short_code", shortCode)
-    .single()
+  if (user) {
+    await ensureProfile(supabase, user.id, user.email ?? null)
 
-  if (gameError || !game || game.status !== "active") {
+    const { data: game } = await supabase
+      .from("games")
+      .select("id")
+      .eq("short_code", shortCode)
+      .maybeSingle()
+
+    if (game) {
+      const { data: existingParticipation } = await supabase
+        .from("game_players")
+        .select("status")
+        .eq("game_id", game.id)
+        .eq("user_id", user.id)
+        .maybeSingle()
+
+      if (existingParticipation) {
+        redirect(`/game/${game.id}`)
+      }
+    }
+  }
+
+  const { data: spectatorData, error } = await supabase.rpc(
+    "get_spectator_game",
+    { p_short_code: shortCode }
+  )
+
+  if (error || !spectatorData) {
     notFound()
   }
 
-  const { data: existingParticipation } = await supabase
-    .from("game_players")
-    .select("status")
-    .eq("game_id", game.id)
-    .eq("user_id", user.id)
-    .maybeSingle()
-
-  if (existingParticipation) {
-    redirect(`/game/${game.id}`)
-  }
-
-  redirect(`/invite/${code}/join`)
+  return (
+    <main id="main-content" tabIndex={-1}>
+      <SpectatorGameView
+        shortCode={shortCode}
+        initialData={spectatorData as SpectatorGameData}
+        isAuthenticated={!!user}
+      />
+    </main>
+  )
 }
-

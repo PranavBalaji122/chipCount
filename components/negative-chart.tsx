@@ -22,7 +22,7 @@ export function NegativeChart({ players }: { players: PlayerSchema[] }) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="h-full max-h-[500px] min-h-[10px] w-full"
+      className="h-[220px] w-full"
     >
       <BarChart
         accessibilityLayer
