@@ -43,7 +43,9 @@ export function LoginForm({ next }: { next?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = next ?? searchParams.get("next") ?? "/dashboard"
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(
+    () => searchParams.get("signup") === "1"
+  )
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
 

@@ -36,8 +36,13 @@ export default function LandingPage() {
               Quick game (no account)
             </Button>
           </Link>
-          <Link href="/login">
+          <Link href="/login?signup=1">
             <Button className="w-full" size="lg" variant="outline">
+              Create account
+            </Button>
+          </Link>
+          <Link href="/login">
+            <Button className="w-full" size="lg" variant="ghost">
               Log in
             </Button>
           </Link>

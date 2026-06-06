@@ -43,52 +43,45 @@ export default async function InvitePage({
 
   const shortCode = code.trim().toLowerCase()
 
-  if (!user) {
-    const { data: spectatorData, error } = await supabase.rpc(
-      "get_spectator_game",
-      { p_short_code: shortCode }
-    )
+  if (user) {
+    await ensureProfile(supabase, user.id, user.email ?? null)
 
-    if (error || !spectatorData) {
-      notFound()
+    const { data: game } = await supabase
+      .from("games")
+      .select("id")
+      .eq("short_code", shortCode)
+      .maybeSingle()
+
+    if (game) {
+      const { data: existingParticipation } = await supabase
+        .from("game_players")
+        .select("status")
+        .eq("game_id", game.id)
+        .eq("user_id", user.id)
+        .maybeSingle()
+
+      if (existingParticipation) {
+        redirect(`/game/${game.id}`)
+      }
     }
-
-    return (
-      <main id="main-content" tabIndex={-1}>
-        <SpectatorGameView
-          shortCode={shortCode}
-          initialData={spectatorData as SpectatorGameData}
-        />
-      </main>
-    )
   }
 
-  await ensureProfile(supabase, user.id, user.email ?? null)
+  const { data: spectatorData, error } = await supabase.rpc(
+    "get_spectator_game",
+    { p_short_code: shortCode }
+  )
 
-  const { data: game, error: gameError } = await supabase
-    .from("games")
-    .select("id, status")
-    .eq("short_code", shortCode)
-    .single()
-
-  if (gameError || !game) {
+  if (error || !spectatorData) {
     notFound()
   }
 
-  const { data: existingParticipation } = await supabase
-    .from("game_players")
-    .select("status")
-    .eq("game_id", game.id)
-    .eq("user_id", user.id)
-    .maybeSingle()
-
-  if (existingParticipation) {
-    redirect(`/game/${game.id}`)
-  }
-
-  if (game.status !== "active") {
-    notFound()
-  }
-
-  redirect(`/invite/${code}/join`)
+  return (
+    <main id="main-content" tabIndex={-1}>
+      <SpectatorGameView
+        shortCode={shortCode}
+        initialData={spectatorData as SpectatorGameData}
+        isAuthenticated={!!user}
+      />
+    </main>
+  )
 }

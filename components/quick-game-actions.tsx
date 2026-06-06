@@ -9,30 +9,21 @@ import { Button } from "@/components/ui/button"
 export function QuickGameActions() {
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
-      () => toast.success("Link copied to clipboard"),
-      () => toast.error("Failed to copy link.")
+      () => toast.success("Link copied"),
+      () => toast.error("Failed to copy link")
     )
   }
 
   return (
-    <div className="space-y-3 text-center">
-      <Button onClick={copyLink} variant="outline">
-        <LinkIcon className="mr-2 h-4 w-4" />
-        Copy link
+    <div className="flex items-center gap-2 shrink-0">
+      <Button onClick={copyLink} variant="outline" size="sm">
+        <LinkIcon className="mr-1.5 h-4 w-4" />
+        <span className="hidden sm:inline">Copy link</span>
+        <span className="sm:hidden">Copy</span>
       </Button>
-      <p className="text-muted-foreground text-sm">
-        This game lives in the link — share it to collaborate. Nothing is saved
-        to your account.
-      </p>
-      <p className="text-muted-foreground text-sm">
-        Want a persistent hosted table?{" "}
-        <Link
-          href="/login"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          Log in
-        </Link>
-      </p>
+      <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
+        <Link href="/login?signup=1">Create account</Link>
+      </Button>
     </div>
   )
 }

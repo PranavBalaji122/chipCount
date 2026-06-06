@@ -9,7 +9,7 @@ import {
   UseFieldArrayAppend,
   UseFieldArrayRemove
 } from "react-hook-form"
-import { X, Loader2 } from "lucide-react"
+import { X, Plus, Cloud } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -21,6 +21,14 @@ import {
   FormMessage
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { gameSchema, GameSchema, PlayerSchema } from "@/lib/schemas"
 import { formattedDateTime } from "@/lib/utils"
 import { useQueryState } from "nuqs"
@@ -58,44 +66,48 @@ export function GameForm() {
     return () => subscription.unsubscribe()
   }, [form, setGame])
 
-  async function onSubmit(values: GameSchema) {
-    setGame(values)
-  }
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input placeholder="Game description" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <PlayerFields
-          form={form}
-          fields={fields}
-          append={append}
-          remove={remove}
-        />
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          Submit
-        </Button>
-      </form>
-    </Form>
+    <Card className="h-full">
+      <CardHeader className="border-b">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle>Game details</CardTitle>
+            <CardDescription className="mt-1">
+              Changes save automatically to the URL
+            </CardDescription>
+          </div>
+          <Badge variant="secondary" className="shrink-0">
+            <Cloud className="h-3 w-3" />
+            Auto-save
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <Form {...form}>
+          <form className="space-y-6">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Friday night game" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <PlayerFields
+              form={form}
+              fields={fields}
+              append={append}
+              remove={remove}
+            />
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -129,26 +141,37 @@ const PlayerField = ({
 const NumericPlayerField = ({
   control,
   name,
-  placeholder,
-  label
+  label,
+  className
 }: {
   control: Control<GameSchema>
   name: `players.${number}.cashIn` | `players.${number}.cashOut`
-  placeholder: string
   label: string
+  className?: string
 }) => (
   <FormField
     control={control}
     name={name}
     render={({ field }) => (
-      <FormItem className="w-32 sm:w-24">
+      <FormItem className={className}>
+        <FormLabel className="text-xs text-muted-foreground md:sr-only">
+          {label}
+        </FormLabel>
         <FormControl>
           <Input
             type="number"
-            placeholder={placeholder}
+            min={0}
+            step="0.01"
+            inputMode="decimal"
+            placeholder="0"
             aria-label={label}
+            className="tabular-nums"
             {...field}
-            onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+            value={field.value === 0 ? "" : field.value}
+            onChange={(e) => {
+              const val = e.target.value
+              field.onChange(val === "" ? "" : e.target.valueAsNumber || 0)
+            }}
           />
         </FormControl>
         <FormMessage />
@@ -170,54 +193,88 @@ const PlayerFields = ({
   append: UseFieldArrayAppend<GameSchema, "players">
   remove: UseFieldArrayRemove
 }) => (
-  <div className="space-y-2">
-    <FormLabel className="grow">Players</FormLabel>
-    <FormDescription>
-      Prefix names with @ or $ to link to Venmo or Cashapp
-    </FormDescription>
-    {fields.map((field, index) => (
-      <div key={field.id} className="flex items-start space-x-2">
-        <PlayerField
-          control={form.control}
-          name={`players.${index}.name`}
-          placeholder={`Player ${index + 1}`}
-          label={`Player ${index + 1} name`}
-          className="grow"
-        />
-        <NumericPlayerField
-          control={form.control}
-          name={`players.${index}.cashIn`}
-          placeholder="In"
-          label={`Cash in for player ${index + 1}`}
-        />
-        <NumericPlayerField
-          control={form.control}
-          name={`players.${index}.cashOut`}
-          placeholder="Out"
-          label={`Cash out for player ${index + 1}`}
-        />
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          aria-label={`Remove player ${index + 1}`}
-          onClick={() => remove(index)}
-          disabled={fields.length <= 2}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    ))}
+  <div className="space-y-3">
     <div>
-      <FormMessage>{form.formState.errors.players?.root?.message}</FormMessage>
+      <FormLabel>Players</FormLabel>
+      <FormDescription className="mt-1">
+        Prefix names with @ or $ for Venmo or Cash App links in payouts
+      </FormDescription>
     </div>
+
+    {/* Column headers — desktop only */}
+    <div className="hidden md:grid md:grid-cols-[1fr_5.5rem_5.5rem_2.25rem] md:gap-2 md:px-1">
+      <span className="text-muted-foreground text-xs font-medium">Name</span>
+      <span className="text-muted-foreground text-xs font-medium">Cash in</span>
+      <span className="text-muted-foreground text-xs font-medium">Cash out</span>
+      <span className="sr-only">Remove</span>
+    </div>
+
+    <div className="space-y-2">
+      {fields.map((field, index) => (
+        <div
+          key={field.id}
+          className="rounded-lg border bg-muted/30 p-3 md:border-0 md:bg-transparent md:p-0 md:rounded-none"
+        >
+          <div className="mb-2 flex items-center justify-between md:hidden">
+            <span className="text-muted-foreground text-xs font-medium">
+              Player {index + 1}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              aria-label={`Remove player ${index + 1}`}
+              onClick={() => remove(index)}
+              disabled={fields.length <= 2}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr] md:grid-cols-[1fr_5.5rem_5.5rem_2.25rem] md:items-start md:gap-2">
+            <PlayerField
+              control={form.control}
+              name={`players.${index}.name`}
+              placeholder={`Player ${index + 1}`}
+              label={`Player ${index + 1} name`}
+              className="sm:col-span-3 md:col-span-1"
+            />
+            <NumericPlayerField
+              control={form.control}
+              name={`players.${index}.cashIn`}
+              label="Cash in"
+            />
+            <NumericPlayerField
+              control={form.control}
+              name={`players.${index}.cashOut`}
+              label="Cash out"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="hidden md:flex h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+              aria-label={`Remove player ${index + 1}`}
+              onClick={() => remove(index)}
+              disabled={fields.length <= 2}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <FormMessage>{form.formState.errors.players?.root?.message}</FormMessage>
+
     <Button
       type="button"
       variant="outline"
       onClick={() => append({} as PlayerSchema)}
       className="w-full"
     >
-      Add Player
+      <Plus className="mr-2 h-4 w-4" />
+      Add player
     </Button>
   </div>
 )

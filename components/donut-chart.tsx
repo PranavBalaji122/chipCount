@@ -12,6 +12,10 @@ import { useMemo } from "react"
 import { formatDollar } from "@/lib/utils"
 import chroma from "chroma-js"
 
+function shortChartLabel(value: string) {
+  return value.length > 12 ? `${value.slice(0, 11)}…` : value
+}
+
 export function DonutCharts({ payout }: { payout: PayoutSchema }) {
   const players = payout.players.toSorted((a, b) => b.net - a.net)
   const smallestNet = players[players.length - 1].net
@@ -107,8 +111,9 @@ export function DonutCharts({ payout }: { payout: PayoutSchema }) {
             dataKey="name"
             position="outside"
             offset={8}
-            className="fill-foreground"
+            className="fill-foreground text-xs"
             stroke="none"
+            formatter={(val: string) => shortChartLabel(val)}
           />
         </Pie>
 
