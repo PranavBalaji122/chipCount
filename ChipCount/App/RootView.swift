@@ -10,7 +10,6 @@ struct RootView: View {
       } else if authStore.currentUser == nil {
         AuthView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .ignoresSafeArea()
       } else if authStore.needsProfileSetup {
         ProfileSetupView()
       } else {
@@ -24,17 +23,15 @@ struct RootView: View {
 
 private struct SplashView: View {
   var body: some View {
-    VStack(spacing: 14) {
-      Image(systemName: "suit.club.fill")
-        .font(.system(size: 42, weight: .bold))
-        .foregroundStyle(.green)
-      Text("ChipCount")
-        .font(.largeTitle.bold())
-      ProgressView()
-        .padding(.top, 8)
+    ZStack {
+      ParchmentBackground()
+      VStack(spacing: 18) {
+        ChipWordmark(size: 30)
+        ProgressView()
+          .tint(Color.chipInk)
+      }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color(.systemGroupedBackground))
   }
 }
 

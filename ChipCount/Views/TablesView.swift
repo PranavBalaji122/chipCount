@@ -12,152 +12,76 @@ struct TablesView: View {
   @State private var errorMessage: String?
   @State private var isLoading = false
 
+  private var activeCount: Int { memberships.filter { $0.game.status == .active }.count }
+
   var body: some View {
     List {
-      Section {
-        VStack(alignment: .leading, spacing: 4) {
-          if let name = authStore.profile?.displayName,
-             let firstName = name.split(whereSeparator: \.isWhitespace).first {
-            Text("Welcome, \(firstName)")
-              .font(.largeTitle.bold())
-          } else {
-            Text("Welcome")
-              .font(.largeTitle.bold())
-          }
-        }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
-      }
+      headerBlock
+      statTiles
+      sectionHeaderRow
 
-      Section {
-        HStack(spacing: 16) {
+      if memberships.isEmpty && !isLoading {
+        emptyState
+      } else {
+        ForEach(memberships) { membership in
           Button {
-            showingCreate = true
+            selectedGame = membership.game
           } label: {
-            VStack(spacing: 12) {
-              Image(systemName: "play.circle.fill")
-                .symbolRenderingMode(.hierarchical)
-                .font(.system(size: 40))
-                .foregroundStyle(.green)
-              
-              VStack(spacing: 2) {
-                Text("Create Table")
-                  .font(.headline)
-                  .foregroundStyle(.primary)
-                Text("Start a new game")
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
+            TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
           }
           .buttonStyle(.plain)
-
-          Button {
-            showingJoin = true
-          } label: {
-            VStack(spacing: 12) {
-              Image(systemName: "arrow.right.circle.fill")
-                .symbolRenderingMode(.hierarchical)
-                .font(.system(size: 40))
-                .foregroundStyle(.secondary)
-              
-              VStack(spacing: 2) {
-                Text("Join Table")
-                  .font(.headline)
-                  .foregroundStyle(.primary)
-                Text("Enter a game ID")
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
-          }
-          .buttonStyle(.plain)
-        }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets())
-      }
-
-      Section("ACTIVE TABLES") {
-        if memberships.isEmpty && !isLoading {
-          ContentUnavailableView(
-            "No active tables",
-            systemImage: "tablecells",
-            description: Text("Create a table or join one with a game ID.")
-          )
           .listRowBackground(Color.clear)
-        } else {
-          ForEach(memberships) { membership in
-            Button {
-              selectedGame = membership.game
-            } label: {
-              TableRow(membership: membership, currentUserId: authStore.currentUser?.id)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-              if isHost(membership) {
-                Button(role: .destructive) {
-                  gamePendingDeletion = membership.game
-                } label: {
-                  Label("Delete", systemImage: "trash")
-                }
-
-                Button {
-                  gamePendingRename = membership.game
-                } label: {
-                  Label("Rename", systemImage: "pencil")
-                }
-                .tint(.blue)
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
+          .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if isHost(membership) {
+              Button(role: .destructive) {
+                gamePendingDeletion = membership.game
+              } label: {
+                Label("Delete", systemImage: "trash")
               }
+              Button {
+                gamePendingRename = membership.game
+              } label: {
+                Label("Rename", systemImage: "pencil")
+              }
+              .tint(Color.chipDriftwood)
             }
           }
         }
       }
 
       if let errorMessage {
-        Section {
-          Text(errorMessage)
-            .foregroundStyle(.red)
-        }
+        Text(errorMessage)
+          .font(.chipFootnote)
+          .foregroundStyle(Color.chipNegative)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
       }
+
+      Color.clear.frame(height: 8)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
-    .listStyle(.insetGrouped)
-    .scrollContentBackground(.hidden)
-    .background(Color(.systemGroupedBackground))
-    .navigationTitle("Tables")
+    .listStyle(.plain)
+    .environment(\.defaultMinListRowHeight, 0)
+    .chipScreenBackground()
     .toolbar(.hidden, for: .navigationBar)
-    .refreshable {
-      await loadTables()
-    }
-    .task {
-      await loadTables()
-    }
+    .safeAreaInset(edge: .bottom) { bottomBar }
+    .refreshable { await loadTables() }
+    .task { await loadTables() }
     .sheet(isPresented: $showingCreate) {
-      CreateTableSheet { name in
-        await createTable(name: name)
-      }
+      CreateTableSheet { name in await createTable(name: name) }
     }
     .sheet(isPresented: $showingJoin) {
-      JoinTableSheet { code, buyIn in
-        await joinTable(code: code, buyIn: buyIn)
-      }
+      JoinTableSheet { code, buyIn in await joinTable(code: code, buyIn: buyIn) }
     }
     .sheet(item: $gamePendingRename) { game in
-      RenameTableSheet(game: game) { name in
-        await renameTable(game: game, name: name)
-      }
+      RenameTableSheet(game: game) { name in await renameTable(game: game, name: name) }
     }
     .alert(
-      "Delete Table?",
+      "End Table?",
       isPresented: Binding(
         get: { gamePendingDeletion != nil },
         set: { if !$0 { gamePendingDeletion = nil } }
@@ -175,6 +99,89 @@ struct TablesView: View {
       GameRoomView(gameId: game.id)
     }
   }
+
+  // MARK: - Sections
+
+  private var headerBlock: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      ChipWordmark(size: 20)
+      VStack(alignment: .leading, spacing: 4) {
+        ChipOverline("Command Central")
+        Text(welcomeTitle)
+          .font(.chipHeadingLg)
+          .tracking(ChipTracking.headingLg)
+          .foregroundStyle(Color.chipInk)
+      }
+    }
+    .padding(.top, 8)
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 16, trailing: 20))
+  }
+
+  private var statTiles: some View {
+    HStack(spacing: 12) {
+      StatTile(label: "Total Tables", value: "\(memberships.count)", filled: false)
+      StatTile(label: "Active Sessions", value: String(format: "%02d", activeCount), filled: true)
+    }
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 20, trailing: 20))
+  }
+
+  private var sectionHeaderRow: some View {
+    SectionHeaderLabel("Active Tables", trailing: nil)
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+  }
+
+  private var emptyState: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text("No active tables")
+        .font(.chipSubheading)
+        .foregroundStyle(Color.chipInk)
+      Text("Create a table or join one with a game ID.")
+        .font(.chipFootnote)
+        .foregroundStyle(Color.chipDriftwood)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .warmSandCard(padding: 20)
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+  }
+
+  private var bottomBar: some View {
+    HStack(spacing: 12) {
+      Button { showingCreate = true } label: {
+        Label("Create Table", systemImage: "plus")
+      }
+      .buttonStyle(.chipFilled)
+
+      Button { showingJoin = true } label: {
+        Text("Join")
+      }
+      .buttonStyle(PillButtonStyle(variant: .outline, fullWidth: false))
+    }
+    .padding(.horizontal, 20)
+    .padding(.top, 10)
+    .padding(.bottom, 6)
+    .background(
+      Color.chipParchment
+        .overlay(Rectangle().fill(Color.chipAshBorder).frame(height: 1), alignment: .top)
+    )
+  }
+
+  private var welcomeTitle: String {
+    if let name = authStore.profile?.displayName,
+       let firstName = name.split(whereSeparator: \.isWhitespace).first {
+      return "Welcome, \(firstName)"
+    }
+    return "Welcome"
+  }
+
+  // MARK: - Actions (unchanged)
 
   private func loadTables() async {
     guard let userId = authStore.currentUser?.id else { return }
@@ -254,46 +261,27 @@ struct TablesView: View {
   }
 }
 
-private struct RenameTableSheet: View {
-  @Environment(\.dismiss) private var dismiss
-  @State private var tableName: String
-  @State private var isSubmitting = false
-  let onRename: (String) async -> Void
+// MARK: - Row & tiles
 
-  init(game: Game, onRename: @escaping (String) async -> Void) {
-    _tableName = State(initialValue: game.description ?? "")
-    self.onRename = onRename
-  }
+private struct StatTile: View {
+  let label: String
+  let value: String
+  let filled: Bool
 
   var body: some View {
-    NavigationStack {
-      Form {
-        Section {
-          TextField("Friday Night Poker", text: $tableName)
-        } header: {
-          Text("Table Name")
-        } footer: {
-          Text("Leave this blank to use the default Poker Table name.")
-        }
-      }
-      .navigationTitle("Rename Table")
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-            .disabled(isSubmitting)
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Save") {
-            Task {
-              isSubmitting = true
-              await onRename(tableName)
-              isSubmitting = false
-            }
-          }
-          .disabled(isSubmitting)
-        }
-      }
+    VStack(alignment: .leading, spacing: 10) {
+      Text(label.uppercased())
+        .font(.chipOverline)
+        .tracking(ChipTracking.overline)
+        .foregroundStyle(filled ? Color.chipParchment.opacity(0.7) : Color.chipDriftwood)
+      Text(value)
+        .font(.chipHeading)
+        .foregroundStyle(filled ? Color.chipParchment : Color.chipInk)
     }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(18)
+    .background(filled ? Color.chipInk : Color.chipWarmSand)
+    .clipShape(RoundedRectangle(cornerRadius: ChipRadius.card, style: .continuous))
   }
 }
 
@@ -301,57 +289,44 @@ private struct TableRow: View {
   let membership: TableMembership
   let currentUserId: String?
 
+  private var isHost: Bool { membership.game.hostId == currentUserId }
+
   var body: some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 4) {
+    HStack(spacing: 14) {
+      IconBadge(systemImage: isHost ? "crown.fill" : "person.2.fill", size: 44)
+
+      VStack(alignment: .leading, spacing: 5) {
         Text(membership.game.description ?? "Poker Table")
-          .font(.headline)
-        Text("ID \(membership.game.shortCode)")
-          .font(.caption.monospaced())
-          .foregroundStyle(.secondary)
-      }
-
-      Spacer()
-
-      VStack(alignment: .trailing, spacing: 4) {
-        Text(role)
-          .font(.caption2.weight(.bold))
-          .textCase(.uppercase)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(roleColor.opacity(0.15))
-          .foregroundStyle(roleColor)
-          .clipShape(Capsule())
-          
-        if membership.status == .denied {
-          Text("Removed")
-            .font(.caption2)
-            .foregroundStyle(.red)
-        } else {
-          Text(membership.game.status.rawValue.capitalized)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+          .font(.chipSubheading)
+          .foregroundStyle(Color.chipInk)
+          .lineLimit(1)
+        HStack(spacing: 8) {
+          Text("ID \(membership.game.shortCode)")
+            .font(.chipMono(11))
+            .foregroundStyle(Color.chipDriftwood)
+          StatusTag(text: statusText, filled: false)
+          if isHost {
+            StatusTag(text: "Host", filled: true)
+          }
         }
       }
+
+      Spacer(minLength: 8)
+
+      Image(systemName: "chevron.right")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(Color.chipFog)
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
+    .warmSandCard(padding: 14)
     .contentShape(Rectangle())
   }
 
-  private var role: String {
-    if membership.game.hostId == currentUserId { return "Host" }
-    switch membership.status {
-    case .approved: return "Player"
-    case .pending: return "Pending"
-    case .denied: return "Removed"
-    }
-  }
-
-  private var roleColor: Color {
-    role == "Removed" ? .red : role == "Host" ? .green : .blue
+  private var statusText: String {
+    membership.status == .denied ? "Removed" : membership.game.status.rawValue.capitalized
   }
 }
+
+// MARK: - Sheets
 
 private struct CreateTableSheet: View {
   @Environment(\.dismiss) private var dismiss
@@ -360,31 +335,21 @@ private struct CreateTableSheet: View {
   let onCreate: (String?) async -> Void
 
   var body: some View {
-    NavigationStack {
-      Form {
-        Section {
-          TextField("Friday Night Poker", text: $tableName)
-        } header: {
-          Text("Table Name")
-        } footer: {
-          Text("Optional. Players will see this before joining.")
-        }
+    SheetScaffold(
+      title: "New Table",
+      footer: "Optional. Players will see this before joining.",
+      confirmTitle: "Create",
+      isSubmitting: isSubmitting,
+      canConfirm: true,
+      onCancel: { dismiss() },
+      onConfirm: {
+        isSubmitting = true
+        await onCreate(tableName)
+        isSubmitting = false
       }
-      .navigationTitle("New Table")
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Create") {
-            Task {
-              isSubmitting = true
-              await onCreate(tableName)
-              isSubmitting = false
-            }
-          }
-          .disabled(isSubmitting)
-        }
+    ) {
+      LabeledField(label: "Table Name") {
+        TextField("Friday Night Poker", text: $tableName)
       }
     }
   }
@@ -398,35 +363,59 @@ private struct JoinTableSheet: View {
   let onJoin: (String, Double) async -> Void
 
   var body: some View {
-    NavigationStack {
-      Form {
-        Section {
-          TextField("a1b2c3d4", text: $code)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-          TextField("Buy-in", value: $buyIn, format: .number)
-            .keyboardType(.decimalPad)
-        } header: {
-          Text("Join Table")
-        } footer: {
-          Text("Your buy-in is sent to the host for approval.")
-        }
+    SheetScaffold(
+      title: "Join Table",
+      footer: "Your buy-in is sent to the host for approval.",
+      confirmTitle: "Send",
+      isSubmitting: isSubmitting,
+      canConfirm: !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && buyIn >= 0,
+      onCancel: { dismiss() },
+      onConfirm: {
+        isSubmitting = true
+        await onJoin(code, buyIn)
+        isSubmitting = false
       }
-      .navigationTitle("Join")
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-          Button("Send") {
-            Task {
-              isSubmitting = true
-              await onJoin(code, buyIn)
-              isSubmitting = false
-            }
-          }
-          .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || buyIn < 0 || isSubmitting)
-        }
+    ) {
+      LabeledField(label: "Game ID") {
+        TextField("a1b2c3d4", text: $code)
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+      }
+      LabeledField(label: "Buy-in") {
+        TextField("0", value: $buyIn, format: .number)
+          .keyboardType(.decimalPad)
+      }
+    }
+  }
+}
+
+private struct RenameTableSheet: View {
+  @Environment(\.dismiss) private var dismiss
+  @State private var tableName: String
+  @State private var isSubmitting = false
+  let onRename: (String) async -> Void
+
+  init(game: Game, onRename: @escaping (String) async -> Void) {
+    _tableName = State(initialValue: game.description ?? "")
+    self.onRename = onRename
+  }
+
+  var body: some View {
+    SheetScaffold(
+      title: "Rename Table",
+      footer: "Leave this blank to use the default Poker Table name.",
+      confirmTitle: "Save",
+      isSubmitting: isSubmitting,
+      canConfirm: true,
+      onCancel: { dismiss() },
+      onConfirm: {
+        isSubmitting = true
+        await onRename(tableName)
+        isSubmitting = false
+      }
+    ) {
+      LabeledField(label: "Table Name") {
+        TextField("Friday Night Poker", text: $tableName)
       }
     }
   }

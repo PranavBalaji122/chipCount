@@ -1,13 +1,17 @@
-
-# Next.js
-.next/
-node_modules/
-.env*
+# macOS
 .DS_Store
 
-# Next.js
+# Next.js / web
 .next/
 out/
 node_modules/
 .env*
-.DS_Store
+
+# Swift Package Manager
+.build/
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+</content>

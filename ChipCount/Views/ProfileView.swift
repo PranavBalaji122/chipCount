@@ -12,65 +12,121 @@ struct ProfileView: View {
   @State private var isSaving = false
   @State private var message: String?
 
+  private var netProfit: Double { authStore.profile?.netProfit ?? 0 }
+
   var body: some View {
-    Form {
-      Section {
-        VStack(alignment: .leading, spacing: 4) {
-          Text((authStore.profile?.netProfit ?? 0).chipCountCurrency)
-            .font(.largeTitle.bold())
-            .foregroundStyle((authStore.profile?.netProfit ?? 0) >= 0 ? .green : .red)
-          Text("Net profit")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 6)
+    List {
+      header
+      accountCard
+      actions
+
+      if let message {
+        Text(message)
+          .font(.chipFootnote)
+          .foregroundStyle(message == "Saved" ? Color.chipDriftwood : Color.chipNegative)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
       }
 
-      Section("Contact") {
+      Color.clear.frame(height: 8)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+    .listStyle(.plain)
+    .environment(\.defaultMinListRowHeight, 0)
+    .chipScreenBackground()
+    .toolbar(.hidden, for: .navigationBar)
+    .task { fill() }
+    .onChange(of: authStore.profile) { _, _ in fill() }
+  }
+
+  private var header: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack {
+        ChipWordmark(size: 20)
+        Spacer()
+        Button {
+          Task { await authStore.signOut() }
+        } label: {
+          Image(systemName: "rectangle.portrait.and.arrow.right")
+            .foregroundStyle(Color.chipInk)
+        }
+        .buttonStyle(.plain)
+      }
+
+      VStack(alignment: .leading, spacing: 6) {
+        ChipOverline("Lifetime Net Profit")
+        Text(netProfit.chipCountCurrency)
+          .font(.chipDisplay)
+          .foregroundStyle(netProfit.chipAmountColor)
+      }
+      .padding(.top, 20)
+    }
+    .padding(.top, 8)
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 20, trailing: 20))
+  }
+
+  private var accountCard: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      SectionHeaderLabel("Account Settings")
+      LabeledField(label: "Display Name") {
         TextField("Display name", text: $displayName)
+      }
+      LabeledField(label: "Email") {
         TextField("Email", text: $email)
           .keyboardType(.emailAddress)
           .textInputAutocapitalization(.never)
+      }
+      LabeledField(label: "Phone") {
         TextField("Phone", text: $phone)
           .keyboardType(.phonePad)
+      }
+      LabeledField(label: "Venmo Handle") {
         TextField("Venmo handle", text: $venmo)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
-        Toggle("Show on leaderboard", isOn: $isPublic)
       }
+      Toggle(isOn: $isPublic) {
+        Text("Show on Leaderboard")
+          .font(.chipBodyMedium)
+          .foregroundStyle(Color.chipInk)
+      }
+      .tint(Color.chipInk)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .warmSandCard(padding: 18)
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 16, trailing: 20))
+  }
 
-      if let message {
-        Section {
-          Text(message)
-            .foregroundStyle(message == "Saved" ? Color.secondary : Color.red)
+  private var actions: some View {
+    VStack(spacing: 12) {
+      Button {
+        Task { await save() }
+      } label: {
+        if isSaving {
+          ProgressView().tint(Color.chipParchment)
+        } else {
+          Text("Save Profile")
         }
       }
+      .buttonStyle(.chipFilled)
+      .disabled(isSaving)
 
-      Section {
-        Button {
-          Task { await save() }
-        } label: {
-          if isSaving {
-            ProgressView()
-          } else {
-            Text("Save Profile")
-          }
-        }
-
-        Button(role: .destructive) {
-          Task { await authStore.signOut() }
-        } label: {
-          Text("Log Out")
-        }
+      Button {
+        Task { await authStore.signOut() }
+      } label: {
+        Text("Log Out")
       }
+      .buttonStyle(.chipOutline)
     }
-    .navigationTitle("Profile")
-    .task {
-      fill()
-    }
-    .onChange(of: authStore.profile) { _, _ in
-      fill()
-    }
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
   }
 
   private func fill() {

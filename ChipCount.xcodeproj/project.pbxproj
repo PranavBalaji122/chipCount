@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		043B6B570D9923B6C9E123E8 /* dm-sans-v17-latin-500.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C1ED3815AD8D8BF830371F29 /* dm-sans-v17-latin-500.ttf */; };
+		058F8DD4B1F415999033D3EB /* ChipComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32550B486458CA9103C3041C /* ChipComponents.swift */; };
+		0B87F0BFFE825F8E22B1F5CF /* jetbrains-mono-v24-latin-regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7FBB0024DBD6298F9E6EC33B /* jetbrains-mono-v24-latin-regular.ttf */; };
+		117FE1C9B23363D6AA5B9BCE /* jetbrains-mono-v24-latin-500.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2F84B9698A3017D010E8E1CD /* jetbrains-mono-v24-latin-500.ttf */; };
 		139C8D4E077C4DE370035031 /* MetricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DDBFF9C18A593B9649C9CC9 /* MetricsView.swift */; };
 		19DB18CF371C53346483AB7C /* ProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B759C0E5F91A51AABB3B63 /* ProfileService.swift */; };
 		1C1EB2C7C38874F156F2EEAC /* ChipCountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF554A6217639A66BBFBB56 /* ChipCountModels.swift */; };
@@ -14,18 +18,25 @@
 		43C67A6CC6D70E2FE6DE1795 /* AuthSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 446F36B1B78772FB5C741451 /* AuthSessionStore.swift */; };
 		4507F41F4143E9FFE63DD7B6 /* ChipCountApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870E6E1385A1BC420D0387F0 /* ChipCountApp.swift */; };
 		4CDE430349A3BCE94BB40392 /* GameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5725C718AFE76F0B4744D475 /* GameService.swift */; };
+		73905692CC88C7DA56D98606 /* inter-v20-latin-regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C84BD04372DF8699A9D12E17 /* inter-v20-latin-regular.ttf */; };
+		7600CDAF166CA41B578D9F86 /* SessionHistoryBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C86CA8940C9ED999A628369 /* SessionHistoryBuilderTests.swift */; };
 		76E0F4ECA713551B65323060 /* PayoutCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD9C8CF75FB39FAEFB7186C2 /* PayoutCalculatorTests.swift */; };
 		7E10AA34F4B8D03194878A62 /* GameRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFA9093EED1C31281F104F0 /* GameRoomView.swift */; };
 		860A3384D47C164AF30C9F8C /* ChipCountCore in Frameworks */ = {isa = PBXBuildFile; productRef = CB7D24AAD0B01415FC6B668B /* ChipCountCore */; };
 		96B1A76BD1A20028525917BA /* SupabaseClientProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BB14B9895FCCCAA87DB177 /* SupabaseClientProvider.swift */; };
+		9D0A3790A12695A13857B3D2 /* ChipTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29682B0A6658CE875495C429 /* ChipTypography.swift */; };
 		A84FF07FD3CD528D7FFE44E0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B6A50E6D352B92B997D36B /* RootView.swift */; };
 		ABF585E2F7F0A4F4A429AC89 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C889AB151F80F289F3D92C6 /* AppConfig.swift */; };
 		AF942024D5D54720BA1A51EB /* ProfileSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033746DF0A409D20669054A6 /* ProfileSetupView.swift */; };
+		B6CB63A66B18A02519EDCFD8 /* inter-v20-latin-500.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C7C6A01231543096E17CC25F /* inter-v20-latin-500.ttf */; };
+		B6E0552115B009CC35848C77 /* ChipPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB43C3392527151072F42D36 /* ChipPalette.swift */; };
+		B6E411F02950C958D1381759 /* DebtCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEFC3FE5D738E392B8211C1 /* DebtCalculatorTests.swift */; };
 		B836F99144497D7CFCA7C257 /* DebtsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 598F30C056FF3F59A6D17B69 /* DebtsView.swift */; };
 		BB52EA71CBD15DAD01F75C8A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C59D5063E83206FB6F2C2B0E /* Supabase */; };
 		BD12425E594F9CACCD861D3C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9797A023B0BF7B943E233321 /* Assets.xcassets */; };
 		DBB31258729E0B34778B31E0 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B119F8FC50CFBFB67D9EE5 /* AuthView.swift */; };
 		E3149C0244E79AC33A2D2E3E /* ChipCountCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6D36CDED0C8DB27089E8AD32 /* ChipCountCore */; };
+		E73EEE4185B761BF61B6ABB6 /* dm-sans-v17-latin-300.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DB2852B473812C3B524676EE /* dm-sans-v17-latin-300.ttf */; };
 		F27A614BD9CFA9FDB4AB6405 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2850ACB5B4EB71FA5CF24949 /* ProfileView.swift */; };
 /* End PBXBuildFile section */
 
@@ -42,9 +53,14 @@
 /* Begin PBXFileReference section */
 		033746DF0A409D20669054A6 /* ProfileSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSetupView.swift; sourceTree = "<group>"; };
 		07B6A50E6D352B92B997D36B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		0EEFC3FE5D738E392B8211C1 /* DebtCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebtCalculatorTests.swift; sourceTree = "<group>"; };
 		10B119F8FC50CFBFB67D9EE5 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		1C889AB151F80F289F3D92C6 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		2850ACB5B4EB71FA5CF24949 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		29682B0A6658CE875495C429 /* ChipTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipTypography.swift; sourceTree = "<group>"; };
+		2F84B9698A3017D010E8E1CD /* jetbrains-mono-v24-latin-500.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "jetbrains-mono-v24-latin-500.ttf"; sourceTree = "<group>"; };
+		32550B486458CA9103C3041C /* ChipComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipComponents.swift; sourceTree = "<group>"; };
+		3C86CA8940C9ED999A628369 /* SessionHistoryBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionHistoryBuilderTests.swift; sourceTree = "<group>"; };
 		3DDBFF9C18A593B9649C9CC9 /* MetricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsView.swift; sourceTree = "<group>"; };
 		446F36B1B78772FB5C741451 /* AuthSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSessionStore.swift; sourceTree = "<group>"; };
 		5725C718AFE76F0B4744D475 /* GameService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameService.swift; sourceTree = "<group>"; };
@@ -52,14 +68,20 @@
 		5AC85938F481C783CF59629E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5FFA9093EED1C31281F104F0 /* GameRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameRoomView.swift; sourceTree = "<group>"; };
 		684BB494C6F2593A7C1DBA0E /* ChipCountCoreTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ChipCountCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FBB0024DBD6298F9E6EC33B /* jetbrains-mono-v24-latin-regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "jetbrains-mono-v24-latin-regular.ttf"; sourceTree = "<group>"; };
 		81B759C0E5F91A51AABB3B63 /* ProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileService.swift; sourceTree = "<group>"; };
 		870E6E1385A1BC420D0387F0 /* ChipCountApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipCountApp.swift; sourceTree = "<group>"; };
 		918FAE2624A08FBB1CDFA87A /* ChipCount.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ChipCount.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9797A023B0BF7B943E233321 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AD9C8CF75FB39FAEFB7186C2 /* PayoutCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayoutCalculatorTests.swift; sourceTree = "<group>"; };
+		C1ED3815AD8D8BF830371F29 /* dm-sans-v17-latin-500.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "dm-sans-v17-latin-500.ttf"; sourceTree = "<group>"; };
 		C5B88EEE3B0DE99EA51F1CC6 /* TablesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TablesView.swift; sourceTree = "<group>"; };
+		C7C6A01231543096E17CC25F /* inter-v20-latin-500.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "inter-v20-latin-500.ttf"; sourceTree = "<group>"; };
+		C84BD04372DF8699A9D12E17 /* inter-v20-latin-regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "inter-v20-latin-regular.ttf"; sourceTree = "<group>"; };
 		D2BB14B9895FCCCAA87DB177 /* SupabaseClientProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClientProvider.swift; sourceTree = "<group>"; };
+		DB2852B473812C3B524676EE /* dm-sans-v17-latin-300.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "dm-sans-v17-latin-300.ttf"; sourceTree = "<group>"; };
 		F94FDFA9C745FFBB1E414406 /* chipCount */ = {isa = PBXFileReference; lastKnownFileType = folder; name = chipCount; path = .; sourceTree = SOURCE_ROOT; };
+		FB43C3392527151072F42D36 /* ChipPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipPalette.swift; sourceTree = "<group>"; };
 		FDF554A6217639A66BBFBB56 /* ChipCountModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChipCountModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -84,6 +106,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0CF76EBBD384B3D1D434A2EA /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				32550B486458CA9103C3041C /* ChipComponents.swift */,
+				FB43C3392527151072F42D36 /* ChipPalette.swift */,
+				29682B0A6658CE875495C429 /* ChipTypography.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
 		2A2D4291F0B80BBFBFF2BDAA /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -132,7 +164,9 @@
 		AE86AB0B805806A4934FE0A8 /* ChipCountCoreTests */ = {
 			isa = PBXGroup;
 			children = (
+				0EEFC3FE5D738E392B8211C1 /* DebtCalculatorTests.swift */,
 				AD9C8CF75FB39FAEFB7186C2 /* PayoutCalculatorTests.swift */,
+				3C86CA8940C9ED999A628369 /* SessionHistoryBuilderTests.swift */,
 			);
 			name = ChipCountCoreTests;
 			path = Tests/ChipCountCoreTests;
@@ -146,6 +180,27 @@
 				D2BB14B9895FCCCAA87DB177 /* SupabaseClientProvider.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		BA317744E48DBB48ABD142FE /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				DB2852B473812C3B524676EE /* dm-sans-v17-latin-300.ttf */,
+				C1ED3815AD8D8BF830371F29 /* dm-sans-v17-latin-500.ttf */,
+				C7C6A01231543096E17CC25F /* inter-v20-latin-500.ttf */,
+				C84BD04372DF8699A9D12E17 /* inter-v20-latin-regular.ttf */,
+				2F84B9698A3017D010E8E1CD /* jetbrains-mono-v24-latin-500.ttf */,
+				7FBB0024DBD6298F9E6EC33B /* jetbrains-mono-v24-latin-regular.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		BC4D66B3EA693D065BD4453A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				BA317744E48DBB48ABD142FE /* Fonts */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		D4AA2DDEB79282E566856A2E /* Views */ = {
@@ -170,7 +225,9 @@
 				5AC85938F481C783CF59629E /* Info.plist */,
 				B4D28E1C65958F27DECEECAE /* App */,
 				65973FBC60A2119D25F2FEF4 /* Models */,
+				BC4D66B3EA693D065BD4453A /* Resources */,
 				4D5CA5C76EA9AA01EF33D79D /* Services */,
+				0CF76EBBD384B3D1D434A2EA /* Theme */,
 				D4AA2DDEB79282E566856A2E /* Views */,
 			);
 			path = ChipCount;
@@ -264,6 +321,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				BD12425E594F9CACCD861D3C /* Assets.xcassets in Resources */,
+				E73EEE4185B761BF61B6ABB6 /* dm-sans-v17-latin-300.ttf in Resources */,
+				043B6B570D9923B6C9E123E8 /* dm-sans-v17-latin-500.ttf in Resources */,
+				B6CB63A66B18A02519EDCFD8 /* inter-v20-latin-500.ttf in Resources */,
+				73905692CC88C7DA56D98606 /* inter-v20-latin-regular.ttf in Resources */,
+				117FE1C9B23363D6AA5B9BCE /* jetbrains-mono-v24-latin-500.ttf in Resources */,
+				0B87F0BFFE825F8E22B1F5CF /* jetbrains-mono-v24-latin-regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,8 +340,11 @@
 				ABF585E2F7F0A4F4A429AC89 /* AppConfig.swift in Sources */,
 				43C67A6CC6D70E2FE6DE1795 /* AuthSessionStore.swift in Sources */,
 				DBB31258729E0B34778B31E0 /* AuthView.swift in Sources */,
+				058F8DD4B1F415999033D3EB /* ChipComponents.swift in Sources */,
 				4507F41F4143E9FFE63DD7B6 /* ChipCountApp.swift in Sources */,
 				1C1EB2C7C38874F156F2EEAC /* ChipCountModels.swift in Sources */,
+				B6E0552115B009CC35848C77 /* ChipPalette.swift in Sources */,
+				9D0A3790A12695A13857B3D2 /* ChipTypography.swift in Sources */,
 				B836F99144497D7CFCA7C257 /* DebtsView.swift in Sources */,
 				7E10AA34F4B8D03194878A62 /* GameRoomView.swift in Sources */,
 				4CDE430349A3BCE94BB40392 /* GameService.swift in Sources */,
@@ -296,7 +362,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B6E411F02950C958D1381759 /* DebtCalculatorTests.swift in Sources */,
 				76E0F4ECA713551B65323060 /* PayoutCalculatorTests.swift in Sources */,
+				7600CDAF166CA41B578D9F86 /* SessionHistoryBuilderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
