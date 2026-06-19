@@ -27,20 +27,33 @@ struct GameRoomView: View {
         pendingSection(snapshot)
         playerSection(snapshot)
         guestSection(snapshot)
-        payoutSection
+        payoutSection(snapshot)
         hostActions(snapshot)
       } else if isLoading {
         ProgressView()
+          .tint(Color.chipInk)
+          .frame(maxWidth: .infinity)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
       }
 
       if let errorMessage {
-        Section {
-          Text(errorMessage)
-            .foregroundStyle(.red)
-        }
+        Text(errorMessage)
+          .font(.chipFootnote)
+          .foregroundStyle(Color.chipNegative)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(rowInsets)
       }
+
+      Color.clear.frame(height: 8)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
-    .navigationTitle(snapshot?.game.description ?? "Table")
+    .listStyle(.plain)
+    .environment(\.defaultMinListRowHeight, 0)
+    .chipScreenBackground()
+    .navigationTitle("")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
@@ -48,12 +61,11 @@ struct GameRoomView: View {
           Task { await load() }
         } label: {
           Image(systemName: "arrow.clockwise")
+            .foregroundStyle(Color.chipInk)
         }
       }
     }
-    .refreshable {
-      await load()
-    }
+    .refreshable { await load() }
     .task {
       await load()
       realtimeTask = await service.observeGame(gameId: gameId) {
@@ -99,215 +111,343 @@ struct GameRoomView: View {
     }
   }
 
+  private var rowInsets: EdgeInsets { EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20) }
+
+  // MARK: - Header
+
   @ViewBuilder
   private func headerSection(_ snapshot: GameSnapshot) -> some View {
-    Section {
-      VStack(alignment: .leading, spacing: 10) {
-        HStack {
-          VStack(alignment: .leading, spacing: 2) {
-            Text(snapshot.game.description ?? "Poker Table")
-              .font(.headline)
-            Text("Game ID \(snapshot.game.shortCode)")
-              .font(.caption.monospaced())
-              .foregroundStyle(.secondary)
+    VStack(alignment: .leading, spacing: 14) {
+      HStack(alignment: .top) {
+        VStack(alignment: .leading, spacing: 6) {
+          Text(snapshot.game.description ?? "Poker Table")
+            .font(.chipHeading)
+            .tracking(ChipTracking.heading)
+            .foregroundStyle(Color.chipInk)
+          HStack(spacing: 8) {
+            Text("ID \(snapshot.game.shortCode)")
+              .font(.chipMono(11))
+              .foregroundStyle(Color.chipDriftwood)
+            StatusTag(text: snapshot.game.status.rawValue, filled: snapshot.game.status == .active)
           }
-          Spacer()
-          Text(snapshot.game.status.rawValue.capitalized)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(statusColor(snapshot.game.status).opacity(0.15))
-            .foregroundStyle(statusColor(snapshot.game.status))
-            .clipShape(Capsule())
         }
+        Spacer()
+        ShareLink(item: inviteURL(for: snapshot.game)) {
+          VStack(spacing: 4) {
+            Image(systemName: "square.and.arrow.up")
+              .font(.system(size: 16, weight: .medium))
+            Text("Share")
+              .font(.chipOverline)
+              .tracking(ChipTracking.overline)
+          }
+          .foregroundStyle(Color.chipInk)
+        }
+      }
 
+      HStack(spacing: 12) {
+        potTile(label: "Total Pot", value: totalPot(snapshot).chipCountCurrency, filled: true)
+        NavigationLink {
+          MetricsView(gameId: snapshot.game.id, isHost: isHost(snapshot))
+        } label: {
+          HStack {
+            VStack(alignment: .leading, spacing: 10) {
+              Text("METRICS")
+                .font(.chipOverline).tracking(ChipTracking.overline)
+                .foregroundStyle(Color.chipDriftwood)
+              Text("History")
+                .font(.chipHeadingSm)
+                .foregroundStyle(Color.chipInk)
+            }
+            Spacer()
+            Image(systemName: "chart.line.uptrend.xyaxis")
+              .foregroundStyle(Color.chipInk)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .warmSandCard(padding: 18)
+        }
+        .buttonStyle(.plain)
       }
     }
-
-    Section {
-      ShareLink(item: inviteURL(for: snapshot.game)) {
-        Label("Share Invite", systemImage: "square.and.arrow.up")
-      }
-
-      NavigationLink {
-        MetricsView(gameId: snapshot.game.id, isHost: isHost(snapshot))
-      } label: {
-        Label("Metrics", systemImage: "chart.line.uptrend.xyaxis")
-      }
-    }
+    .padding(.top, 4)
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 16, trailing: 20))
   }
+
+  private func potTile(label: String, value: String, filled: Bool) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text(label.uppercased())
+        .font(.chipOverline).tracking(ChipTracking.overline)
+        .foregroundStyle(filled ? Color.chipParchment.opacity(0.7) : Color.chipDriftwood)
+      Text(value)
+        .font(.chipMono(22, medium: true))
+        .foregroundStyle(filled ? Color.chipParchment : Color.chipInk)
+        .minimumScaleFactor(0.6)
+        .lineLimit(1)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(18)
+    .background(filled ? Color.chipInk : Color.chipWarmSand)
+    .clipShape(RoundedRectangle(cornerRadius: ChipRadius.card, style: .continuous))
+  }
+
+  // MARK: - Pending
 
   @ViewBuilder
   private func pendingSection(_ snapshot: GameSnapshot) -> some View {
     if isHost(snapshot), !snapshot.pendingPlayers.isEmpty {
-      Section("Pending Approval") {
-        ForEach(snapshot.pendingPlayers) { player in
-          HStack {
-            VStack(alignment: .leading) {
-              Text(player.displayName ?? String(player.userId.prefix(8)))
-              Text("Requested in \(player.requestedCashIn.chipCountCurrency), out \(player.requestedCashOut.chipCountCurrency)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button("Approve") {
-              Task { await approve(player) }
-            }
-            .buttonStyle(.borderedProminent)
+      SectionHeaderLabel("Pending Approvals", systemImage: "person.crop.circle.badge.questionmark")
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
 
-            Button("Deny", role: .destructive) {
-              Task { await deny(player) }
-            }
-            .buttonStyle(.bordered)
+      ForEach(snapshot.pendingPlayers) { player in
+        VStack(alignment: .leading, spacing: 12) {
+          VStack(alignment: .leading, spacing: 3) {
+            Text(player.displayName ?? String(player.userId.prefix(8)))
+              .font(.chipBodyMedium)
+              .foregroundStyle(Color.chipInk)
+            Text("Requesting in \(player.requestedCashIn.chipCountCurrency), out \(player.requestedCashOut.chipCountCurrency)")
+              .font(.chipFootnote)
+              .foregroundStyle(Color.chipDriftwood)
+          }
+          HStack(spacing: 10) {
+            Button("Approve") { Task { await approve(player) } }
+              .buttonStyle(.chipFilledCompact)
+            Button("Deny") { Task { await deny(player) } }
+              .buttonStyle(.chipOutlineCompact)
           }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .warmSandCard(padding: 16)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(rowInsets)
       }
     }
   }
+
+  // MARK: - Players
 
   @ViewBuilder
   private func playerSection(_ snapshot: GameSnapshot) -> some View {
-    Section("Players") {
-      ForEach(snapshot.players) { player in
-        PlayerAmountRow(
-          player: player,
-          isHost: isHost(snapshot),
-          isCurrentUser: player.userId == authStore.currentUser?.id,
-          isClosed: snapshot.game.status == .closed,
-          onSaveApproved: { cashIn, cashOut in
-            await saveApproved(player: player, cashIn: cashIn, cashOut: cashOut)
-          },
-          onSaveRequested: { requestedIn, requestedOut in
-            await saveRequested(player: player, requestedIn: requestedIn, requestedOut: requestedOut)
-          },
-          onRequestRejoin: {
-            await requestRejoin()
-          }
-        )
-      }
+    SectionHeaderLabel(
+      "Active Players",
+      systemImage: "person.2",
+      trailing: "\(snapshot.approvedPlayers.count) players"
+    )
+    .listRowBackground(Color.clear)
+    .listRowSeparator(.hidden)
+    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+
+    ForEach(snapshot.players) { player in
+      PlayerAmountRow(
+        player: player,
+        isHost: isHost(snapshot),
+        isCurrentUser: player.userId == authStore.currentUser?.id,
+        isClosed: snapshot.game.status == .closed,
+        onSaveApproved: { cashIn, cashOut in
+          await saveApproved(player: player, cashIn: cashIn, cashOut: cashOut)
+        },
+        onSaveRequested: { requestedIn, requestedOut in
+          await saveRequested(player: player, requestedIn: requestedIn, requestedOut: requestedOut)
+        },
+        onRequestRejoin: { await requestRejoin() }
+      )
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(rowInsets)
     }
   }
+
+  // MARK: - Guests
 
   @ViewBuilder
   private func guestSection(_ snapshot: GameSnapshot) -> some View {
-    Section("Guests") {
-      ForEach(snapshot.guests) { guest in
-        HStack {
-          VStack(alignment: .leading) {
-            Text("\(guest.name) (guest)")
-            Text("In \(guest.cashIn.chipCountCurrency), out \(guest.cashOut.chipCountCurrency)")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          Spacer()
-          if isHost(snapshot), snapshot.game.status == .active {
-            Button(role: .destructive) {
-              Task { await removeGuest(guest) }
-            } label: {
-              Image(systemName: "trash")
-            }
-          }
-        }
-      }
+    if !snapshot.guests.isEmpty || (isHost(snapshot) && snapshot.game.status == .active) {
+      SectionHeaderLabel("Guests", systemImage: "person.fill.questionmark")
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+    }
 
-      if isHost(snapshot), snapshot.game.status == .active {
-        VStack(spacing: 10) {
-          TextField("Guest name", text: $guestName)
-          HStack {
-            TextField("In", value: $guestCashIn, format: .number)
-              .keyboardType(.decimalPad)
-            TextField("Out", value: $guestCashOut, format: .number)
-              .keyboardType(.decimalPad)
-          }
-          Button {
-            Task { await addGuest() }
+    ForEach(snapshot.guests) { guest in
+      HStack {
+        VStack(alignment: .leading, spacing: 3) {
+          Text("\(guest.name) (guest)")
+            .font(.chipBodyMedium)
+            .foregroundStyle(Color.chipInk)
+          Text("In \(guest.cashIn.chipCountCurrency), out \(guest.cashOut.chipCountCurrency)")
+            .font(.chipFootnote)
+            .foregroundStyle(Color.chipDriftwood)
+        }
+        Spacer()
+        if isHost(snapshot), snapshot.game.status == .active {
+          Button(role: .destructive) {
+            Task { await removeGuest(guest) }
           } label: {
-            Label("Add Guest", systemImage: "person.badge.plus")
-              .frame(maxWidth: .infinity)
+            Image(systemName: "trash")
+              .foregroundStyle(Color.chipDriftwood)
           }
-          .buttonStyle(.bordered)
-          .disabled(guestName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          .buttonStyle(.plain)
         }
       }
+      .warmSandCard(padding: 14)
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(rowInsets)
+    }
+
+    if isHost(snapshot), snapshot.game.status == .active {
+      VStack(spacing: 12) {
+        TextField("Guest name", text: $guestName)
+          .textFieldStyle(.chipFlat)
+        HStack(spacing: 12) {
+          AmountBox(label: "In", value: $guestCashIn)
+          AmountBox(label: "Out", value: $guestCashOut)
+        }
+        Button {
+          Task { await addGuest() }
+        } label: {
+          Label("Add Guest", systemImage: "person.badge.plus")
+        }
+        .buttonStyle(.chipOutline)
+        .disabled(guestName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+      .warmSandCard(padding: 16)
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(rowInsets)
     }
   }
+
+  // MARK: - Payout
 
   @ViewBuilder
-  private var payoutSection: some View {
+  private func payoutSection(_ snapshot: GameSnapshot) -> some View {
     if let payout {
-      Section("Payout Summary") {
+      SectionHeaderLabel("Payout Instructions", systemImage: "arrow.left.arrow.right")
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 8, trailing: 20))
+
+      VStack(alignment: .leading, spacing: 16) {
         Text("Slippage \(payout.slippage.chipCountCurrency)")
-          .foregroundStyle(.secondary)
+          .font(.chipFootnote)
+          .foregroundStyle(Color.chipDriftwood)
+
         ForEach(payout.players) { player in
-          VStack(alignment: .leading, spacing: 6) {
+          VStack(alignment: .leading, spacing: 8) {
             HStack {
               Text(player.displayName)
-                .font(.headline)
+                .font(.chipBodyMedium)
+                .foregroundStyle(Color.chipInk)
               Spacer()
               Text(player.net.chipCountCurrency)
-                .foregroundStyle(player.net >= 0 ? .green : .red)
+                .font(.chipMono(15, medium: true))
+                .foregroundStyle(player.net.chipAmountColor)
             }
             ForEach(player.paidBy, id: \.target) { payment in
-              Text("Receives \(payment.value.chipCountCurrency) from \(payment.target)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+              transferLine(from: payment.target, to: player.displayName, amount: payment.value)
             }
             ForEach(player.paidTo, id: \.target) { payment in
-              Text("Pays \(payment.value.chipCountCurrency) to \(payment.target)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+              transferLine(from: player.displayName, to: payment.target, amount: payment.value)
             }
+          }
+          if player.id != payout.players.last?.id {
+            Rectangle().fill(Color.chipAshBorder).frame(height: 1)
           }
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .warmSandCard(padding: 18)
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(rowInsets)
     }
   }
+
+  private func transferLine(from payer: String, to recipient: String, amount: Double) -> some View {
+    HStack(spacing: 6) {
+      Text(payer).foregroundStyle(Color.chipDriftwood)
+      Image(systemName: "arrow.right").font(.system(size: 9))
+        .foregroundStyle(Color.chipFog)
+      Text(amount.chipCountCurrency).foregroundStyle(Color.chipInk)
+      Image(systemName: "arrow.right").font(.system(size: 9))
+        .foregroundStyle(Color.chipFog)
+      Text(recipient).foregroundStyle(Color.chipDriftwood)
+      Spacer(minLength: 0)
+    }
+    .font(.chipMono(11))
+    .lineLimit(1)
+    .minimumScaleFactor(0.7)
+  }
+
+  // MARK: - Host actions
 
   @ViewBuilder
   private func hostActions(_ snapshot: GameSnapshot) -> some View {
     if isHost(snapshot) {
-      Section {
+      VStack(spacing: 12) {
         if snapshot.game.status == .active {
-          Button {
-            showingCloseSessionConfirmation = true
-          } label: {
+          Button { showingCloseSessionConfirmation = true } label: {
             Label("Close Session", systemImage: "lock")
           }
+          .buttonStyle(.chipOutline)
         }
-
         if snapshot.game.status == .closed {
-          Button {
-            Task { await reopenSession() }
-          } label: {
+          Button { Task { await reopenSession() } } label: {
             Label("Reopen Session", systemImage: "lock.open")
           }
+          .buttonStyle(.chipOutline)
         }
-
-        Button(role: .destructive) {
-          showingEndGameConfirmation = true
-        } label: {
+        Button { showingEndGameConfirmation = true } label: {
           Label("End Game", systemImage: "xmark.circle")
         }
+        .buttonStyle(.chipFilled)
       }
+      .listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
 
       let transferCandidates = snapshot.approvedPlayers.filter { $0.userId != snapshot.game.hostId }
       if !transferCandidates.isEmpty {
-        Section {
-          ForEach(transferCandidates) { player in
-            Button {
-              transferCandidate = player
-            } label: {
-              Label(player.displayName ?? String(player.userId.prefix(8)), systemImage: "crown")
+        SectionHeaderLabel("Transfer Host", systemImage: "crown")
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 8, trailing: 20))
+
+        ForEach(transferCandidates) { player in
+          Button {
+            transferCandidate = player
+          } label: {
+            HStack {
+              Text(player.displayName ?? String(player.userId.prefix(8)))
+                .font(.chipBodyMedium)
+                .foregroundStyle(Color.chipInk)
+              Spacer()
+              Image(systemName: "crown")
+                .foregroundStyle(Color.chipDriftwood)
             }
+            .warmSandCard(padding: 14)
           }
-        } header: {
-          Text("Transfer Host")
-        } footer: {
-          Text("The selected player immediately becomes the table host.")
+          .buttonStyle(.plain)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
+          .listRowInsets(rowInsets)
         }
       }
     }
   }
+
+  // MARK: - Derived
+
+  private func totalPot(_ snapshot: GameSnapshot) -> Double {
+    snapshot.approvedPlayers.reduce(0) { $0 + $1.cashIn }
+      + snapshot.guests.reduce(0) { $0 + $1.cashIn }
+  }
+
+  // MARK: - Actions (unchanged)
 
   private func load() async {
     isLoading = true
@@ -385,7 +525,6 @@ struct GameRoomView: View {
         cashIn: guestCashIn,
         cashOut: guestCashOut
       )
-      // Optimistically update
       if var current = snapshot {
         current.guests.append(newGuest)
         snapshot = current
@@ -393,9 +532,6 @@ struct GameRoomView: View {
       guestName = ""
       guestCashIn = 0
       guestCashOut = 0
-      // We still call load in the background if we want, or rely on realtime
-      // But let's just let realtime handle it or do it silently.
-      // Doing it right here avoids the "disappearing" glitch if load() fetches stale data.
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -454,12 +590,32 @@ struct GameRoomView: View {
   private func inviteURL(for game: Game) -> URL {
     AppConfig.webBaseURL.appending(path: "invite/\(game.shortCode)")
   }
+}
 
-  private func statusColor(_ status: GameStatus) -> Color {
-    switch status {
-    case .active: return .green
-    case .closed: return .orange
-    case .ended: return .secondary
+// MARK: - Amount input
+
+/// Small labeled monospace numeric input box.
+struct AmountBox: View {
+  let label: String
+  @Binding var value: Double
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text(label.uppercased())
+        .font(.chipOverline).tracking(ChipTracking.overline)
+        .foregroundStyle(Color.chipDriftwood)
+      TextField("0", value: $value, format: .number)
+        .keyboardType(.decimalPad)
+        .font(.chipMono(15, medium: true))
+        .foregroundStyle(Color.chipInk)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: ChipRadius.input, style: .continuous))
+        .overlay(
+          RoundedRectangle(cornerRadius: ChipRadius.input, style: .continuous)
+            .strokeBorder(Color.chipAshBorder, lineWidth: 1)
+        )
     }
   }
 }
@@ -502,27 +658,29 @@ private struct PlayerAmountRow: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 12) {
       HStack {
         Text(player.displayName ?? String(player.userId.prefix(8)))
-          .font(.headline)
+          .font(.chipBodyMedium)
+          .foregroundStyle(Color.chipInk)
         Spacer()
         Text(player.status.rawValue.capitalized)
-          .font(.caption)
-          .foregroundStyle(player.status == .denied ? .red : .secondary)
+          .font(.chipOverline)
+          .tracking(ChipTracking.overline)
+          .foregroundStyle(player.status == .denied ? Color.chipNegative : Color.chipFog)
       }
 
       if isHost, player.status == .approved {
-        amountEditor(cashInTitle: "In", cashOutTitle: "Out", cashIn: $cashIn, cashOut: $cashOut, disabled: isClosed) {
+        amountEditor(inTitle: "Cash-in", outTitle: "Cash-out", cashIn: $cashIn, cashOut: $cashOut, disabled: isClosed) {
           await onSaveApproved(cashIn, cashOut)
         }
       } else if isCurrentUser, player.status == .approved, !isClosed {
-        amountEditor(cashInTitle: "Requested in", cashOutTitle: "Requested out", cashIn: $requestedIn, cashOut: $requestedOut, disabled: false) {
+        amountEditor(inTitle: "Requested in", outTitle: "Requested out", cashIn: $requestedIn, cashOut: $requestedOut, disabled: false) {
           await onSaveRequested(requestedIn, requestedOut)
         }
         Text("Approved: in \(player.cashIn.chipCountCurrency), out \(player.cashOut.chipCountCurrency)")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+          .font(.chipFootnote)
+          .foregroundStyle(Color.chipDriftwood)
       } else if isCurrentUser, player.status == .denied {
         Button("Request to Rejoin") {
           Task {
@@ -531,30 +689,29 @@ private struct PlayerAmountRow: View {
             isSaving = false
           }
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.chipOutlineCompact)
       } else {
         Text("In \(player.cashIn.chipCountCurrency), out \(player.cashOut.chipCountCurrency)")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+          .font(.chipFootnote)
+          .foregroundStyle(Color.chipDriftwood)
       }
     }
-    .padding(.vertical, 4)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .warmSandCard(padding: 16)
   }
 
   private func amountEditor(
-    cashInTitle: String,
-    cashOutTitle: String,
+    inTitle: String,
+    outTitle: String,
     cashIn: Binding<Double>,
     cashOut: Binding<Double>,
     disabled: Bool,
     save: @escaping () async -> Void
   ) -> some View {
-    VStack(spacing: 8) {
-      HStack {
-        TextField(cashInTitle, value: cashIn, format: .number)
-          .keyboardType(.decimalPad)
-        TextField(cashOutTitle, value: cashOut, format: .number)
-          .keyboardType(.decimalPad)
+    VStack(spacing: 10) {
+      HStack(spacing: 12) {
+        AmountBox(label: inTitle, value: cashIn)
+        AmountBox(label: outTitle, value: cashOut)
       }
       Button {
         Task {
@@ -564,14 +721,12 @@ private struct PlayerAmountRow: View {
         }
       } label: {
         if isSaving {
-          ProgressView()
-            .frame(maxWidth: .infinity)
+          ProgressView().tint(Color.chipInk)
         } else {
           Text("Save Amounts")
-            .frame(maxWidth: .infinity)
         }
       }
-      .buttonStyle(.bordered)
+      .buttonStyle(.chipOutline)
       .disabled(disabled || isSaving)
     }
   }

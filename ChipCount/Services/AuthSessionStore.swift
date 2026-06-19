@@ -48,13 +48,22 @@ final class AuthSessionStore: ObservableObject {
   func signUp(displayName: String, email: String, password: String) async {
     errorMessage = nil
     do {
-      _ = try await supabase.auth.signUp(
+      let response = try await supabase.auth.signUp(
         email: email,
         password: password,
         data: ["display_name": .string(displayName)],
         redirectTo: AppConfig.authRedirectURL
       )
-      try await signIn(email: email, password: password)
+
+      // When email confirmation is enabled, sign-up returns no session — the user
+      // must confirm via email before they can sign in. Don't attempt an immediate
+      // sign-in (it fails with a misleading "Invalid login credentials").
+      if let session = response.session {
+        currentUser = AuthenticatedUser(id: session.user.id.uuidString.lowercased(), email: session.user.email)
+        try await refreshProfile(displayNameFallback: displayName)
+      } else {
+        errorMessage = "Account created. Check your email to confirm, then log in."
+      }
     } catch {
       errorMessage = error.localizedDescription
     }

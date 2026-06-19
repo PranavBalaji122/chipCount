@@ -30,6 +30,13 @@ targets:
         SUPABASE_URL: https://yburwobuxamrxasapwyo.supabase.co
         NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlidXJ3b2J1eGFtcnhhc2Fwd3lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDM0MjksImV4cCI6MjA4NzExOTQyOX0.JnJBIq7ohfWX5O5KUbLVlnTHOTJ-segSlNZOz9vlPZ4
         UILaunchScreen: {}
+        UIAppFonts:
+          - dm-sans-v17-latin-300.ttf
+          - dm-sans-v17-latin-500.ttf
+          - inter-v20-latin-regular.ttf
+          - inter-v20-latin-500.ttf
+          - jetbrains-mono-v24-latin-regular.ttf
+          - jetbrains-mono-v24-latin-500.ttf
         CFBundleURLTypes:
           - CFBundleURLName: com.pranavbalaji.ChipCount.auth
             CFBundleURLSchemes:
