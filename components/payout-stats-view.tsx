@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import type { PayoutSchema } from "@/lib/schemas"
-import { PlayerSummary } from "./player-summary"
-import { SlippageInfo } from "./slippage-info"
-import { DonutCharts } from "./donut-chart"
-import { NegativeChart } from "./negative-chart"
-import { Card, CardContent } from "./ui/card"
-import { formatDollar } from "@/lib/utils"
+import type { PayoutSchema } from "@/lib/schemas";
+import { PlayerSummary } from "./player-summary";
+import { SlippageInfo } from "./slippage-info";
+import { DonutCharts } from "./donut-chart";
+import { NegativeChart } from "./negative-chart";
+import { Card, CardContent } from "./ui/card";
+import { formatDollar } from "@/lib/utils";
 
 export function PayoutStatsView({ payout }: { payout: PayoutSchema }) {
   const sorted = {
     ...payout,
-    players: [...payout.players].sort((a, b) => a.name.localeCompare(b.name))
-  }
+    players: [...payout.players].sort((a, b) => a.name.localeCompare(b.name)),
+  };
 
   return (
     <div className="space-y-6">
@@ -45,5 +45,5 @@ export function PayoutStatsView({ payout }: { payout: PayoutSchema }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   LineChart,
@@ -7,27 +7,30 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
-} from "recharts"
-import { formatDollar } from "@/lib/utils"
+  ResponsiveContainer,
+} from "recharts";
+import { formatDollar } from "@/lib/utils";
 
-type Point = { at: string; net: number }
+type Point = { at: string; net: number };
 
 export function NetProfitChart({ points }: { points: Point[] }) {
   return (
     <div className="h-[200px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={points} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+        <LineChart
+          data={points}
+          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="at"
-            tick={{ fontSize: 12, fill: "#a1a1aa" }}
-            axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+            tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+            axisLine={{ stroke: "var(--border)" }}
             tickLine={false}
           />
           <YAxis
             tickFormatter={(v) => formatDollar(v)}
-            tick={{ fontSize: 12, fill: "#a1a1aa" }}
+            tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
             axisLine={false}
             tickLine={false}
           />
@@ -35,26 +38,29 @@ export function NetProfitChart({ points }: { points: Point[] }) {
             formatter={(value: number) => [formatDollar(value), "Net profit"]}
             labelFormatter={(label) => label}
             contentStyle={{
-              backgroundColor: "#18181b",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "8px",
-              color: "#f4f4f5",
+              backgroundColor: "var(--popover)",
+              border: "1px solid var(--border)",
+              borderRadius: "0px",
+              color: "var(--popover-foreground)",
               fontSize: "13px",
             }}
-            labelStyle={{ color: "#a1a1aa", marginBottom: "2px" }}
-            itemStyle={{ color: "#4ade80" }}
-            cursor={{ stroke: "rgba(255,255,255,0.15)" }}
+            labelStyle={{
+              color: "var(--muted-foreground)",
+              marginBottom: "2px",
+            }}
+            itemStyle={{ color: "var(--foreground)" }}
+            cursor={{ stroke: "var(--border)" }}
           />
           <Line
             type="monotone"
             dataKey="net"
-            stroke="#4ade80"
+            stroke="var(--foreground)"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#4ade80", strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: "#4ade80", strokeWidth: 0 }}
+            dot={{ r: 3, fill: "var(--foreground)", strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: "var(--foreground)", strokeWidth: 0 }}
           />
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

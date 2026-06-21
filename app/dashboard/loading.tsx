@@ -1,5 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
@@ -8,7 +14,8 @@ export default function DashboardLoading() {
         <CardHeader>
           <CardTitle>Dashboard</CardTitle>
           <CardDescription>
-            Start a new table, join one with a game ID, or check the leaderboard.
+            Start a new table, join one with a game ID, or check the
+            leaderboard.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -39,7 +46,10 @@ export default function DashboardLoading() {
         </CardHeader>
         <CardContent className="space-y-2">
           {[1, 2].map((i) => (
-            <div key={i} className="flex items-center justify-between rounded border px-3 py-2">
+            <div
+              key={i}
+              className="flex items-center justify-between rounded border px-3 py-2"
+            >
               <div className="space-y-1">
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-3 w-24" />
@@ -63,7 +73,10 @@ export default function DashboardLoading() {
         <CardContent>
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between rounded border px-3 py-2">
+              <div
+                key={i}
+                className="flex items-center justify-between rounded border px-3 py-2"
+              >
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-4 w-16" />
               </div>
@@ -72,5 +85,5 @@ export default function DashboardLoading() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

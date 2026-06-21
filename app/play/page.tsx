@@ -1,82 +1,111 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Suspense } from "react"
-import { ArrowLeft } from "lucide-react"
+import Link from "next/link";
+import { Suspense } from "react";
 
-import { GameForm } from "@/components/game-form"
-import { PayoutStats } from "@/components/payout-stats"
-import { QuickGameActions } from "@/components/quick-game-actions"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { GameForm } from "@/components/game-form";
+import { PayoutStats } from "@/components/payout-stats";
+import { QuickGameActions } from "@/components/quick-game-actions";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function PlayPageContent() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="shrink-0">
-                <ArrowLeft className="mr-1.5 h-4 w-4" />
-                Home
-              </Button>
+    <div className="min-h-screen bg-parchment-canvas text-on-surface">
+      {/* TopNavBar */}
+      <header className="fixed top-0 z-50 w-full border-b border-border-muted bg-parchment-canvas">
+        <nav className="mx-auto flex h-20 max-w-container-max items-center justify-between px-6 md:px-page-margin">
+          <Link
+            href="/"
+            className="font-headline-md text-headline-md text-primary"
+          >
+            ChipCount
+          </Link>
+          <div className="hidden items-center space-x-12 md:flex">
+            <Link
+              href="/dashboard"
+              className="font-body-md text-body-md text-muted-ink transition-colors hover:text-primary"
+            >
+              Dashboard
             </Link>
-            <div className="hidden sm:block h-4 w-px bg-border" />
-            <div className="min-w-0 hidden sm:block">
-              <p className="font-semibold text-sm truncate">Quick Game</p>
-              <p className="text-muted-foreground text-xs truncate">
-                No account needed
-              </p>
-            </div>
+            <Link
+              href="/play"
+              className="border-b-2 border-primary pb-1 font-body-md text-body-md font-bold text-primary"
+            >
+              Play
+            </Link>
+            <Link
+              href="/import"
+              className="font-body-md text-body-md text-muted-ink transition-colors hover:text-primary"
+            >
+              Import
+            </Link>
+          </div>
+          <Link
+            href="/login"
+            className="rounded-full bg-primary px-8 py-2.5 font-label-caps text-label-caps uppercase tracking-widest text-on-primary transition-transform hover:scale-95"
+          >
+            Sign In
+          </Link>
+        </nav>
+      </header>
+
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto min-h-screen max-w-container-max px-6 pb-24 pt-32 md:px-page-margin"
+      >
+        {/* Header Section */}
+        <div className="mb-16 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+          <div className="max-w-2xl">
+            <h1 className="mb-4 font-display-lg text-display-lg text-primary">
+              Calculator
+            </h1>
+            <p className="font-body-lg text-body-lg text-muted-ink">
+              Input your table stacks to reconcile the session. Our engine
+              handles currency slippage automatically, and everything auto-saves
+              to the link.
+            </p>
           </div>
           <QuickGameActions />
         </div>
-      </header>
 
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Track &amp; settle up
-          </h1>
-          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm sm:text-base">
-            Enter player buy-ins and cash-outs below. Everything auto-saves to
-            the link — share it so anyone can view and edit.
-          </p>
-        </div>
+        <div className="grid grid-cols-12 items-start gap-grid-gutter">
+          {/* Left: input form */}
+          <section className="col-span-12 lg:col-span-7">
+            <GameForm />
+          </section>
 
-        <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
-          <GameForm />
-          <PayoutStats />
+          {/* Right: results panel */}
+          <aside className="col-span-12 lg:sticky lg:top-32 lg:col-span-5">
+            <PayoutStats />
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
-  )
+  );
 }
 
 function PlayPageSkeleton() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="border-b px-4 py-3">
+    <div className="min-h-screen bg-parchment-canvas">
+      <div className="border-b border-border-muted px-6 py-6">
         <Skeleton className="h-9 w-48" />
       </div>
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+      <div className="mx-auto max-w-container-max space-y-6 px-6 py-12 md:px-page-margin">
         <Skeleton className="h-16 w-full max-w-lg" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-[28rem]" />
-          <Skeleton className="h-[28rem]" />
+        <div className="grid grid-cols-12 gap-grid-gutter">
+          <Skeleton className="col-span-12 h-[28rem] lg:col-span-7" />
+          <Skeleton className="col-span-12 h-[28rem] lg:col-span-5" />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function PlayPage() {
   return (
-    <main id="main-content" tabIndex={-1}>
-      <Suspense fallback={<PlayPageSkeleton />}>
-        <PlayPageContent />
-      </Suspense>
-    </main>
-  )
+    <Suspense fallback={<PlayPageSkeleton />}>
+      <PlayPageContent />
+    </Suspense>
+  );
 }

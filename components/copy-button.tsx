@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Copy, Check } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Copy, Check } from "lucide-react";
 
 export function CopyButton({ textToCopy }: { textToCopy: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <Button
@@ -22,10 +22,10 @@ export function CopyButton({ textToCopy }: { textToCopy: string }) {
       aria-label={copied ? "Copied" : "Copy"}
     >
       {copied ? (
-        <Check className="h-4 w-4 text-green-500" />
+        <Check className="h-4 w-4 text-profit" />
       ) : (
         <Copy className="h-4 w-4" />
       )}
     </Button>
-  )
+  );
 }

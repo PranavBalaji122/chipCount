@@ -1,46 +1,33 @@
-"use client"
+"use client";
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  useFieldArray,
-  useForm,
-  Control,
-  UseFormReturn,
-  UseFieldArrayAppend,
-  UseFieldArrayRemove
-} from "react-hook-form"
-import { X, Plus, Cloud } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useFieldArray, useForm, useWatch, Control } from "react-hook-form";
+import { Icon } from "@/components/icon";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { gameSchema, GameSchema, PlayerSchema } from "@/lib/schemas"
-import { formattedDateTime } from "@/lib/utils"
-import { useQueryState } from "nuqs"
-import { parseZipson } from "@/lib/utils"
-import { useEffect } from "react"
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { gameSchema, GameSchema, PlayerSchema } from "@/lib/schemas";
+import { formattedDateTime, formatDollar } from "@/lib/utils";
+import { useQueryState } from "nuqs";
+import { parseZipson } from "@/lib/utils";
+import { useEffect } from "react";
+
+const LABEL =
+  "font-label-caps text-[10px] text-muted-ink mb-2 uppercase tracking-tighter";
+const TERMINAL =
+  "input-terminal font-body-md text-body-md w-full bg-transparent";
 
 export function GameForm() {
   const [game, setGame] = useQueryState("game", {
     ...parseZipson,
     history: "replace",
-    throttleMs: 800
-  })
+    throttleMs: 800,
+  });
 
   const form = useForm<GameSchema>({
     resolver: zodResolver(gameSchema),
@@ -48,67 +35,108 @@ export function GameForm() {
       description: game?.description || `${formattedDateTime()} Game`,
       players: game?.players || [
         { name: "", cashIn: "", cashOut: "" },
-        { name: "", cashIn: "", cashOut: "" }
-      ]
-    }
-  })
+        { name: "", cashIn: "", cashOut: "" },
+      ],
+    },
+  });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "players"
-  })
+    name: "players",
+  });
 
   useEffect(() => {
     const subscription = form.watch((value) => {
-      const parsedVal = gameSchema.safeParse(value)
-      setGame(parsedVal.success ? parsedVal.data : value)
-    })
-    return () => subscription.unsubscribe()
-  }, [form, setGame])
+      const parsedVal = gameSchema.safeParse(value);
+      setGame(parsedVal.success ? parsedVal.data : value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setGame]);
 
   return (
-    <Card className="h-full">
-      <CardHeader className="border-b">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle>Game details</CardTitle>
-            <CardDescription className="mt-1">
-              Changes save automatically to the URL
-            </CardDescription>
+    <Form {...form}>
+      <form className="space-y-12">
+        {/* Session name */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <span className={LABEL}>Session Name</span>
+              <FormControl>
+                <Input
+                  className={TERMINAL}
+                  placeholder="Friday night game"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Active players */}
+        <div>
+          <div className="mb-8 flex items-center justify-between">
+            <h2 className="font-headline-md text-headline-md text-primary">
+              Active Players
+            </h2>
+            <button
+              type="button"
+              onClick={() => append({} as PlayerSchema)}
+              className="flex items-center font-label-caps text-label-caps text-primary transition-opacity hover:opacity-70"
+            >
+              <Icon name="add" className="mr-2" />
+              Add Player
+            </button>
           </div>
-          <Badge variant="secondary" className="shrink-0">
-            <Cloud className="h-3 w-3" />
-            Auto-save
-          </Badge>
+
+          <div className="space-y-8">
+            {fields.map((field, index) => (
+              <div
+                key={field.id}
+                className="player-row group flex items-end space-x-4 border-b border-transparent pb-2"
+              >
+                <div className="grid flex-grow grid-cols-3 gap-6">
+                  <PlayerField
+                    control={form.control}
+                    name={`players.${index}.name`}
+                    label="Player Name"
+                    placeholder={`Player ${index + 1}`}
+                  />
+                  <NumericPlayerField
+                    control={form.control}
+                    name={`players.${index}.cashIn`}
+                    label="Total Buy-in"
+                  />
+                  <NumericPlayerField
+                    control={form.control}
+                    name={`players.${index}.cashOut`}
+                    label="Cash Out"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  disabled={fields.length <= 2}
+                  aria-label={`Remove player ${index + 1}`}
+                  className="mb-2 text-mock-error opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
+                >
+                  <Icon name="delete_outline" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <FormMessage>
+            {form.formState.errors.players?.root?.message}
+          </FormMessage>
         </div>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form className="space-y-6">
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Friday night game" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <PlayerFields
-              form={form}
-              fields={fields}
-              append={append}
-              remove={remove}
-            />
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
-  )
+
+        <SessionAnalytics control={form.control} />
+      </form>
+    </Form>
+  );
 }
 
 const PlayerField = ({
@@ -116,165 +144,116 @@ const PlayerField = ({
   name,
   placeholder,
   label,
-  className
 }: {
-  control: Control<GameSchema>
-  name: `players.${number}.name`
-  placeholder: string
-  label: string
-  className?: string
+  control: Control<GameSchema>;
+  name: `players.${number}.name`;
+  placeholder: string;
+  label: string;
 }) => (
   <FormField
     control={control}
     name={name}
     render={({ field }) => (
-      <FormItem className={className}>
-        <FormControl>
-          <Input placeholder={placeholder} aria-label={label} {...field} />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}
-  />
-)
-
-const NumericPlayerField = ({
-  control,
-  name,
-  label,
-  className
-}: {
-  control: Control<GameSchema>
-  name: `players.${number}.cashIn` | `players.${number}.cashOut`
-  label: string
-  className?: string
-}) => (
-  <FormField
-    control={control}
-    name={name}
-    render={({ field }) => (
-      <FormItem className={className}>
-        <FormLabel className="text-xs text-muted-foreground md:sr-only">
-          {label}
-        </FormLabel>
+      <FormItem className="flex flex-col">
+        <span className={LABEL}>{label}</span>
         <FormControl>
           <Input
-            type="number"
-            min={0}
-            step="0.01"
-            inputMode="decimal"
-            placeholder="0"
+            className={TERMINAL}
+            placeholder={placeholder}
             aria-label={label}
-            className="tabular-nums"
             {...field}
-            value={field.value === 0 ? "" : field.value}
-            onChange={(e) => {
-              const val = e.target.value
-              field.onChange(val === "" ? "" : e.target.valueAsNumber || 0)
-            }}
           />
         </FormControl>
         <FormMessage />
       </FormItem>
     )}
   />
-)
+);
 
-const PlayerFields = ({
-  form,
-  fields,
-  append,
-  remove
+const NumericPlayerField = ({
+  control,
+  name,
+  label,
 }: {
-  form: UseFormReturn<GameSchema>
-  fields: ReturnType<
-    typeof useFieldArray<GameSchema, "players", "id">
-  >["fields"]
-  append: UseFieldArrayAppend<GameSchema, "players">
-  remove: UseFieldArrayRemove
+  control: Control<GameSchema>;
+  name: `players.${number}.cashIn` | `players.${number}.cashOut`;
+  label: string;
 }) => (
-  <div className="space-y-3">
-    <div>
-      <FormLabel>Players</FormLabel>
-      <FormDescription className="mt-1">
-        Prefix names with @ or $ for Venmo or Cash App links in payouts
-      </FormDescription>
-    </div>
-
-    {/* Column headers — desktop only */}
-    <div className="hidden md:grid md:grid-cols-[1fr_5.5rem_5.5rem_2.25rem] md:gap-2 md:px-1">
-      <span className="text-muted-foreground text-xs font-medium">Name</span>
-      <span className="text-muted-foreground text-xs font-medium">Cash in</span>
-      <span className="text-muted-foreground text-xs font-medium">Cash out</span>
-      <span className="sr-only">Remove</span>
-    </div>
-
-    <div className="space-y-2">
-      {fields.map((field, index) => (
-        <div
-          key={field.id}
-          className="rounded-lg border bg-muted/30 p-3 md:border-0 md:bg-transparent md:p-0 md:rounded-none"
-        >
-          <div className="mb-2 flex items-center justify-between md:hidden">
-            <span className="text-muted-foreground text-xs font-medium">
-              Player {index + 1}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              aria-label={`Remove player ${index + 1}`}
-              onClick={() => remove(index)}
-              disabled={fields.length <= 2}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+  <FormField
+    control={control}
+    name={name}
+    render={({ field }) => (
+      <FormItem className="flex flex-col">
+        <span className={LABEL}>{label}</span>
+        <FormControl>
+          <div className="relative">
+            <span className="absolute bottom-1.5 left-0 text-muted-ink">$</span>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              inputMode="decimal"
+              placeholder="0.00"
+              aria-label={label}
+              className={`${TERMINAL} pl-4 tabular-nums`}
+              {...field}
+              value={field.value === 0 ? "" : field.value}
+              onChange={(e) => {
+                const val = e.target.value;
+                field.onChange(val === "" ? "" : e.target.valueAsNumber || 0);
+              }}
+            />
           </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr] md:grid-cols-[1fr_5.5rem_5.5rem_2.25rem] md:items-start md:gap-2">
-            <PlayerField
-              control={form.control}
-              name={`players.${index}.name`}
-              placeholder={`Player ${index + 1}`}
-              label={`Player ${index + 1} name`}
-              className="sm:col-span-3 md:col-span-1"
-            />
-            <NumericPlayerField
-              control={form.control}
-              name={`players.${index}.cashIn`}
-              label="Cash in"
-            />
-            <NumericPlayerField
-              control={form.control}
-              name={`players.${index}.cashOut`}
-              label="Cash out"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="hidden md:flex h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-              aria-label={`Remove player ${index + 1}`}
-              onClick={() => remove(index)}
-              disabled={fields.length <= 2}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+);
+
+function SessionAnalytics({ control }: { control: Control<GameSchema> }) {
+  const players = useWatch({ control, name: "players" }) ?? [];
+  const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0);
+  const buyInTotal = players.reduce((s, p) => s + num(p?.cashIn), 0);
+  const totalPot = players.reduce((s, p) => s + num(p?.cashOut), 0);
+  const totalProfit = totalPot - buyInTotal;
+  const tableError = buyInTotal - totalPot;
+
+  const stats = [
+    { label: "Total Pot", value: totalPot },
+    { label: "Buy-in Total", value: buyInTotal },
+    { label: "Total Profit", value: totalProfit },
+  ];
+
+  return (
+    <div className="space-y-8 border border-border-muted bg-white p-8 sm:p-10">
+      <h3 className="font-label-caps text-label-caps uppercase text-muted-ink">
+        Session Analytics
+      </h3>
+      <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <div className="mb-1 font-label-caps text-[10px] uppercase text-muted-ink">
+              {s.label}
+            </div>
+            <div className="font-headline-md text-headline-md text-primary">
+              {formatDollar(s.value)}
+            </div>
+          </div>
+        ))}
+        <div>
+          <div className="mb-1 font-label-caps text-[10px] uppercase text-muted-ink">
+            Table Error
+          </div>
+          <div
+            className={`font-headline-md text-headline-md ${
+              Math.abs(tableError) > 1e-9 ? "text-mock-error" : "text-primary"
+            }`}
+          >
+            {formatDollar(tableError)}
           </div>
         </div>
-      ))}
+      </div>
     </div>
-
-    <FormMessage>{form.formState.errors.players?.root?.message}</FormMessage>
-
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => append({} as PlayerSchema)}
-      className="w-full"
-    >
-      <Plus className="mr-2 h-4 w-4" />
-      Add player
-    </Button>
-  </div>
-)
+  );
+}

@@ -1,22 +1,22 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import { headers } from "next/headers"
-import { GameSession } from "@/components/game-session"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { GameSession } from "@/components/game-session";
 
 export default async function GamePage({
-  params
+  params,
 }: {
-  params: Promise<{ gameId: string }>
+  params: Promise<{ gameId: string }>;
 }) {
-  const { gameId } = await params
-  const supabase = await createClient()
+  const { gameId } = await params;
+  const supabase = await createClient();
 
   const {
-    data: { user }
-  } = await supabase.auth.getUser()
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    notFound()
+    notFound();
   }
 
   // Run game, players, and guests queries in parallel
@@ -29,46 +29,46 @@ export default async function GamePage({
     supabase
       .from("game_players")
       .select(
-        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)"
+        "user_id, status, cash_in, cash_out, requested_cash_in, requested_cash_out, profile:profiles(display_name, venmo_handle)",
       )
       .eq("game_id", gameId),
     supabase
       .from("game_guests")
       .select("id, name, cash_in, cash_out")
-      .eq("game_id", gameId)
-  ])
+      .eq("game_id", gameId),
+  ]);
 
-  const { data: game, error: gameError } = gameResult
-  const { data: rawPlayers, error: playersError } = playersResult
-  const { data: rawGuests, error: guestsError } = guestsResult
+  const { data: game, error: gameError } = gameResult;
+  const { data: rawPlayers, error: playersError } = playersResult;
+  const { data: rawGuests, error: guestsError } = guestsResult;
 
   if (gameError || !game) {
-    notFound()
+    notFound();
   }
 
   if (playersError) {
-    console.error("Error fetching players:", playersError)
+    console.error("Error fetching players:", playersError);
   }
 
   if (guestsError) {
-    console.error("Error fetching guests:", guestsError)
+    console.error("Error fetching guests:", guestsError);
   }
 
   const players =
     rawPlayers?.map(
       (p: {
-        user_id: string
-        status: string
-        cash_in: number | null
-        cash_out: number | null
-        requested_cash_in: number | null
-        requested_cash_out: number | null
+        user_id: string;
+        status: string;
+        cash_in: number | null;
+        cash_out: number | null;
+        requested_cash_in: number | null;
+        requested_cash_out: number | null;
         profile:
-        | { display_name: string | null; venmo_handle: string | null }
-        | { display_name: string | null; venmo_handle: string | null }[]
-        | null
+          | { display_name: string | null; venmo_handle: string | null }
+          | { display_name: string | null; venmo_handle: string | null }[]
+          | null;
       }) => {
-        const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile
+        const prof = Array.isArray(p.profile) ? p.profile[0] : p.profile;
         return {
           user_id: p.user_id,
           status: p.status as "pending" | "approved" | "denied",
@@ -77,32 +77,32 @@ export default async function GamePage({
           requested_cash_in: Number(p.requested_cash_in ?? p.cash_in ?? 0),
           requested_cash_out: Number(p.requested_cash_out ?? p.cash_out ?? 0),
           display_name: prof?.display_name ?? null,
-          venmo_handle: prof?.venmo_handle ?? null
-        }
-      }
-    ) ?? []
+          venmo_handle: prof?.venmo_handle ?? null,
+        };
+      },
+    ) ?? [];
 
   const guests =
     rawGuests?.map(
       (guest: {
-        id: string
-        name: string
-        cash_in: number | null
-        cash_out: number | null
+        id: string;
+        name: string;
+        cash_in: number | null;
+        cash_out: number | null;
       }) => ({
         id: guest.id,
         name: guest.name,
         cash_in: Number(guest.cash_in ?? 0),
-        cash_out: Number(guest.cash_out ?? 0)
-      })
-    ) ?? []
+        cash_out: Number(guest.cash_out ?? 0),
+      }),
+    ) ?? [];
 
-  const isHost = game.host_id === user.id
+  const isHost = game.host_id === user.id;
 
-  const headerStore = await headers()
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host")
-  const protocol = headerStore.get("x-forwarded-proto") ?? "http"
-  const baseUrl = host ? `${protocol}://${host}` : ""
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
+  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
+  const baseUrl = host ? `${protocol}://${host}` : "";
 
   return (
     <GameSession
@@ -113,5 +113,5 @@ export default async function GamePage({
       isHost={isHost}
       baseUrl={baseUrl}
     />
-  )
+  );
 }

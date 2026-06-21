@@ -11,3 +11,10 @@ out/
 node_modules/
 .env*
 .DS_Store
+
+# iOS / Xcode build artifacts (leftovers when switching from the ChipCountMobile branch)
+.build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+DerivedData/

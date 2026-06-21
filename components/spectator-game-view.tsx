@@ -1,141 +1,139 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { calcPayouts, formatDollar } from "@/lib/utils"
-import type { GameSchema } from "@/lib/schemas"
-import { PlayerSummary } from "./player-summary"
-import { SlippageInfo } from "./slippage-info"
-import { DonutCharts } from "./donut-chart"
-import { NegativeChart } from "./negative-chart"
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { calcPayouts, formatDollar } from "@/lib/utils";
+import type { GameSchema } from "@/lib/schemas";
+import { PlayerSummary } from "./player-summary";
+import { SlippageInfo } from "./slippage-info";
+import { DonutCharts } from "./donut-chart";
+import { NegativeChart } from "./negative-chart";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "./ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "./ui/badge"
+  CardTitle,
+} from "./ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "./ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from "./ui/dialog"
-import { ArrowLeft, Eye, Link as LinkIcon, Lock } from "lucide-react"
-import { toast } from "sonner"
+  DialogTitle,
+} from "./ui/dialog";
+import { ArrowLeft, Eye, Link as LinkIcon, Lock } from "lucide-react";
+import { toast } from "sonner";
 
 export type SpectatorGameData = {
   game: {
-    id: string
-    short_code: string
-    description: string | null
-    status: "active" | "closed"
-  }
+    id: string;
+    short_code: string;
+    description: string | null;
+    status: "active" | "closed";
+  };
   players: {
-    display_name: string | null
-    status: "pending" | "approved" | "denied"
-    cash_in: number
-    cash_out: number
-    venmo_handle: string | null
-  }[]
+    display_name: string | null;
+    status: "pending" | "approved" | "denied";
+    cash_in: number;
+    cash_out: number;
+    venmo_handle: string | null;
+  }[];
   guests: {
-    name: string
-    cash_in: number
-    cash_out: number
-  }[]
-}
+    name: string;
+    cash_in: number;
+    cash_out: number;
+  }[];
+};
 
-const DISMISS_KEY_PREFIX = "chipcount-spectator-signin-dismissed-"
+const DISMISS_KEY_PREFIX = "chipcount-spectator-signin-dismissed-";
 
 function playerName(p: SpectatorGameData["players"][number]) {
   return (
-    p.display_name ||
-    (p.venmo_handle ? `@${p.venmo_handle}` : null) ||
-    "Player"
-  )
+    p.display_name || (p.venmo_handle ? `@${p.venmo_handle}` : null) || "Player"
+  );
 }
 
 function statusBadge(status: "pending" | "approved" | "denied") {
   switch (status) {
     case "pending":
-      return <Badge variant="outline">Pending</Badge>
+      return <Badge variant="outline">Pending</Badge>;
     case "denied":
-      return <Badge variant="destructive">Denied</Badge>
+      return <Badge variant="destructive">Denied</Badge>;
     default:
-      return null
+      return null;
   }
 }
 
 export function SpectatorGameView({
   shortCode,
   initialData,
-  isAuthenticated = false
+  isAuthenticated = false,
 }: {
-  shortCode: string
-  initialData: SpectatorGameData
-  isAuthenticated?: boolean
+  shortCode: string;
+  initialData: SpectatorGameData;
+  isAuthenticated?: boolean;
 }) {
-  const [data, setData] = useState(initialData)
-  const [showSignInDialog, setShowSignInDialog] = useState(false)
+  const [data, setData] = useState(initialData);
+  const [showSignInDialog, setShowSignInDialog] = useState(false);
 
   const inviteUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/invite/${shortCode}`
-      : `/invite/${shortCode}`
+      : `/invite/${shortCode}`;
 
-  const loginUrl = `/login?next=${encodeURIComponent(`/invite/${shortCode}`)}`
-  const joinUrl = `/invite/${shortCode}/join`
+  const loginUrl = `/login?next=${encodeURIComponent(`/invite/${shortCode}`)}`;
+  const joinUrl = `/invite/${shortCode}/join`;
 
   const fetchGame = useCallback(async () => {
-    const supabase = createClient()
+    const supabase = createClient();
     const { data: result, error } = await supabase.rpc("get_spectator_game", {
-      p_short_code: shortCode
-    })
+      p_short_code: shortCode,
+    });
     if (!error && result) {
-      setData(result as SpectatorGameData)
+      setData(result as SpectatorGameData);
     }
-  }, [shortCode])
+  }, [shortCode]);
 
   useEffect(() => {
-    if (isAuthenticated) return
+    if (isAuthenticated) return;
 
     const dismissed =
-      localStorage.getItem(`${DISMISS_KEY_PREFIX}${shortCode}`) === "1"
+      localStorage.getItem(`${DISMISS_KEY_PREFIX}${shortCode}`) === "1";
     if (!dismissed) {
-      setShowSignInDialog(true)
+      setShowSignInDialog(true);
     }
-  }, [shortCode, isAuthenticated])
+  }, [shortCode, isAuthenticated]);
 
   useEffect(() => {
-    const interval = setInterval(fetchGame, 5000)
-    return () => clearInterval(interval)
-  }, [fetchGame])
+    const interval = setInterval(fetchGame, 5000);
+    return () => clearInterval(interval);
+  }, [fetchGame]);
 
-  const approved = data.players.filter((p) => p.status === "approved")
-  const isClosed = data.game.status === "closed"
-  const gameLabel = data.game.description || "Game"
+  const approved = data.players.filter((p) => p.status === "approved");
+  const isClosed = data.game.status === "closed";
+  const gameLabel = data.game.description || "Game";
 
   const gameForPayout = useMemo((): GameSchema | null => {
     const guestsWithAmounts = data.guests.filter(
-      (g) => g.cash_in !== 0 || g.cash_out !== 0
-    )
-    if (approved.length + guestsWithAmounts.length < 2) return null
+      (g) => g.cash_in !== 0 || g.cash_out !== 0,
+    );
+    if (approved.length + guestsWithAmounts.length < 2) return null;
 
-    const names = new Set<string>()
+    const names = new Set<string>();
     const makeName = (base: string, fallbackIndex?: number) => {
-      let name = base
-      let n = fallbackIndex ?? 0
+      let name = base;
+      let n = fallbackIndex ?? 0;
       while (names.has(name)) {
-        name = `${base}_${++n}`
+        name = `${base}_${++n}`;
       }
-      names.add(name)
-      return name
-    }
+      names.add(name);
+      return name;
+    };
 
     const players = [
       ...approved.map((p, i) => ({
@@ -143,45 +141,45 @@ export function SpectatorGameView({
           p.venmo_handle
             ? `@${p.venmo_handle}`
             : p.display_name || `Player_${i}`,
-          i
+          i,
         ),
         cashIn: p.cash_in,
-        cashOut: p.cash_out
+        cashOut: p.cash_out,
       })),
       ...guestsWithAmounts.map((g, i) => ({
         name: makeName(g.name, i),
         cashIn: g.cash_in,
-        cashOut: g.cash_out
-      }))
-    ]
+        cashOut: g.cash_out,
+      })),
+    ];
 
     return {
       description: data.game.description || undefined,
-      players
-    }
-  }, [approved, data.game.description, data.guests])
+      players,
+    };
+  }, [approved, data.game.description, data.guests]);
 
   const payout = useMemo(
     () => (gameForPayout ? calcPayouts(gameForPayout) : null),
-    [gameForPayout]
-  )
+    [gameForPayout],
+  );
 
   function dismissSignInDialog() {
-    localStorage.setItem(`${DISMISS_KEY_PREFIX}${shortCode}`, "1")
-    setShowSignInDialog(false)
+    localStorage.setItem(`${DISMISS_KEY_PREFIX}${shortCode}`, "1");
+    setShowSignInDialog(false);
   }
 
   function copyInviteLink() {
-    navigator.clipboard.writeText(inviteUrl)
-    toast.success("Link copied")
+    navigator.clipboard.writeText(inviteUrl);
+    toast.success("Link copied");
   }
 
-  const hasPlayers = data.players.length > 0 || data.guests.length > 0
+  const hasPlayers = data.players.length > 0 || data.guests.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/">
               <Button variant="ghost" size="sm" className="shrink-0">
@@ -218,10 +216,10 @@ export function SpectatorGameView({
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <div className="mb-8 sm:mb-12">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 className="font-display text-4xl tracking-tight text-foreground sm:text-5xl">
               {gameLabel}
             </h1>
             {isClosed && (
@@ -242,9 +240,7 @@ export function SpectatorGameView({
           <Card className="h-full">
             <CardHeader className="border-b">
               <CardTitle>Players &amp; amounts</CardTitle>
-              <CardDescription>
-                Updates every few seconds
-              </CardDescription>
+              <CardDescription>Updates every few seconds</CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
               {!hasPlayers ? (
@@ -259,7 +255,7 @@ export function SpectatorGameView({
                     <span className="text-right">Out</span>
                     <span className="sr-only">Status</span>
                   </div>
-                  <div className="divide-y rounded-lg border">
+                  <div className="divide-y divide-border border border-border">
                     {data.players.map((p, i) => (
                       <div
                         key={`${playerName(p)}-${i}`}
@@ -325,7 +321,7 @@ export function SpectatorGameView({
             </CardHeader>
             <CardContent className="space-y-5 pt-6">
               {!payout ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/20 py-16 text-center">
+                <div className="flex flex-col items-center justify-center border border-dashed border-border bg-background py-16 text-center">
                   <p className="text-muted-foreground text-sm font-medium">
                     Not enough data yet
                   </p>
@@ -340,7 +336,7 @@ export function SpectatorGameView({
                     <SlippageInfo payout={payout} />
                   )}
 
-                  <div className="rounded-lg border bg-muted/20 p-4 sm:p-5">
+                  <div className="border border-border bg-background p-4 sm:p-5">
                     <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
                       <DonutCharts payout={payout} />
                       <div className="min-h-[220px] w-full">
@@ -371,8 +367,8 @@ export function SpectatorGameView({
         <Dialog
           open={showSignInDialog}
           onOpenChange={(open) => {
-            if (!open) dismissSignInDialog()
-            else setShowSignInDialog(true)
+            if (!open) dismissSignInDialog();
+            else setShowSignInDialog(true);
           }}
         >
           <DialogContent showCloseButton={false}>
@@ -395,5 +391,5 @@ export function SpectatorGameView({
         </Dialog>
       )}
     </div>
-  )
+  );
 }

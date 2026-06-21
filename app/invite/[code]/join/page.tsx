@@ -1,53 +1,53 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect, notFound } from "next/navigation"
-import { JoinRequestForm } from "./join-request-form"
+import { createClient } from "@/lib/supabase/server";
+import { redirect, notFound } from "next/navigation";
+import { JoinRequestForm } from "./join-request-form";
 
 async function ensureProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
-  email: string | null
+  email: string | null,
 ) {
-  const fallbackName = email ? email.split("@")[0] : null
+  const fallbackName = email ? email.split("@")[0] : null;
   const { data: existing } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("id", userId)
-    .single()
+    .single();
   if (!existing) {
     await supabase.from("profiles").insert({
       id: userId,
       email,
-      display_name: fallbackName
-    })
+      display_name: fallbackName,
+    });
   }
 }
 
 export default async function InviteJoinPage({
-  params
+  params,
 }: {
-  params: Promise<{ code: string }>
+  params: Promise<{ code: string }>;
 }) {
-  const { code } = await params
-  const supabase = await createClient()
+  const { code } = await params;
+  const supabase = await createClient();
   const {
-    data: { user }
-  } = await supabase.auth.getUser()
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/invite/${code}/join`)}`)
+    redirect(`/login?next=${encodeURIComponent(`/invite/${code}/join`)}`);
   }
 
-  await ensureProfile(supabase, user.id, user.email ?? null)
+  await ensureProfile(supabase, user.id, user.email ?? null);
 
-  const shortCode = code.trim().toLowerCase()
+  const shortCode = code.trim().toLowerCase();
   const { data: game, error: gameError } = await supabase
     .from("games")
     .select("id, status, description")
     .eq("short_code", shortCode)
-    .single()
+    .single();
 
   if (gameError || !game || game.status !== "active") {
-    notFound()
+    notFound();
   }
 
   const { data: existingParticipation } = await supabase
@@ -55,10 +55,10 @@ export default async function InviteJoinPage({
     .select("status")
     .eq("game_id", game.id)
     .eq("user_id", user.id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (existingParticipation) {
-    redirect(`/game/${game.id}`)
+    redirect(`/game/${game.id}`);
   }
 
   return (
@@ -68,5 +68,5 @@ export default async function InviteJoinPage({
         gameDescription={game.description ?? undefined}
       />
     </main>
-  )
+  );
 }

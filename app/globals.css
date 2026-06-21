@@ -4,21 +4,28 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --font-display: var(--font-dm-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
+
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-loss: var(--chart-loss);
+  --color-chart-profit: var(--chart-profit);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+
+  --color-orb-ember: var(--orb-ember);
+  --color-orb-violet: var(--orb-violet);
+
+  --color-loss-foreground: var(--loss-foreground);
+  --color-loss: var(--loss);
+  --color-profit-foreground: var(--profit-foreground);
+  --color-profit: var(--profit);
+
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -36,83 +43,130 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
 }
 
+/*
+  Exact tokens from the Stitch "Parchment Terminal" web mockups so the ported
+  mockup markup (bg-parchment-canvas, text-display-lg, px-page-margin, …)
+  renders pixel-faithfully. Uniquely named to avoid colliding with the shadcn
+  tokens above. "Waldenburg" headline font → DM Sans (its documented substitute).
+*/
+@theme {
+  --color-parchment-canvas: #fdfcfc;
+  --color-sand-surface: #f5f3f1;
+  --color-terminal-black: #000000;
+  --color-on-primary: #ffffff;
+  --color-on-surface: #1b1b1b;
+  --color-ink-gray: #4a4a4a;
+  --color-muted-ink: #5e5e5d; /* mockup "secondary" gray text */
+  --color-border-muted: #e2e2e2;
+  --color-surface-bright: #f9f9f9;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-outline: #7e7576;
+  --color-outline-variant: #cfc4c5;
+  --color-mock-error: #ba1a1a;
+
+  --spacing-page-margin: 80px;
+  --spacing-grid-gutter: 32px;
+  --spacing-element-gap: 24px;
+  --spacing-section-gap: 120px;
+
+  --container-container-max: 1200px;
+
+  --font-display-lg: var(--font-dm-sans), "DM Sans", ui-sans-serif, sans-serif;
+  --font-headline-lg: var(--font-dm-sans), "DM Sans", ui-sans-serif, sans-serif;
+  --font-headline-md: var(--font-dm-sans), "DM Sans", ui-sans-serif, sans-serif;
+  --font-body-lg: var(--font-inter), "Inter", ui-sans-serif, sans-serif;
+  --font-body-md: var(--font-inter), "Inter", ui-sans-serif, sans-serif;
+  --font-label-caps: var(--font-inter), "Inter", ui-sans-serif, sans-serif;
+  --font-mono-ui: var(--font-inter), "Inter", ui-sans-serif, sans-serif;
+
+  --text-display-lg: 64px;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 300;
+  --text-headline-lg: 40px;
+  --text-headline-lg--line-height: 1.2;
+  --text-headline-lg--font-weight: 300;
+  --text-headline-md: 32px;
+  --text-headline-md--line-height: 1.2;
+  --text-headline-md--font-weight: 300;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.6;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.5;
+  --text-body-md--font-weight: 400;
+  --text-label-caps: 12px;
+  --text-label-caps--line-height: 1;
+  --text-label-caps--letter-spacing: 0.1em;
+  --text-label-caps--font-weight: 600;
+  --text-mono-ui: 14px;
+  --text-mono-ui--line-height: 1;
+  --text-mono-ui--letter-spacing: -0.01em;
+  --text-mono-ui--font-weight: 500;
+}
+
+/*
+  Parchment Terminal design system (light-only).
+  Warm achromatic "scholarly-technical" palette: parchment canvas, warm-sand
+  surfaces, midnight-ink controls, hairline ash borders, tonal-layer depth.
+  Money is the one deliberate chromatic exception: green = profit, red = loss.
+*/
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.147 0.004 49.25);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.147 0.004 49.25);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.216 0.006 56.043);
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.97 0.001 106.424);
-  --secondary-foreground: oklch(0.216 0.006 56.043);
-  --muted: oklch(0.97 0.001 106.424);
-  --muted-foreground: oklch(0.553 0.013 58.071);
-  --accent: oklch(0.97 0.001 106.424);
-  --accent-foreground: oklch(0.216 0.006 56.043);
-  --destructive: oklch(0.577 0.245 27.325);
-  --success: oklch(0.65 0.22 150);
-  --border: oklch(0.923 0.003 48.717);
-  --input: oklch(0.923 0.003 48.717);
-  --ring: oklch(0.709 0.01 56.259);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0.001 106.423);
-  --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: oklch(0.216 0.006 56.043);
-  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-accent: oklch(0.97 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-border: oklch(0.923 0.003 48.717);
-  --sidebar-ring: oklch(0.709 0.01 56.259);
-}
+  --radius: 0px;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.147 0.004 49.25);
-    --foreground: oklch(0.985 0.001 106.423);
-    --card: oklch(0.216 0.006 56.043);
-    --card-foreground: oklch(0.985 0.001 106.423);
-    --popover: oklch(0.216 0.006 56.043);
-    --popover-foreground: oklch(0.985 0.001 106.423);
-    --primary: oklch(0.923 0.003 48.717);
-    --primary-foreground: oklch(0.216 0.006 56.043);
-    --secondary: oklch(0.268 0.007 34.298);
-    --secondary-foreground: oklch(0.985 0.001 106.423);
-    --muted: oklch(0.268 0.007 34.298);
-    --muted-foreground: oklch(0.709 0.01 56.259);
-    --accent: oklch(0.268 0.007 34.298);
-    --accent-foreground: oklch(0.985 0.001 106.423);
-    --destructive: oklch(0.704 0.191 22.216);
-    --success: oklch(0.6 0.2 150);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.553 0.013 58.071);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.216 0.006 56.043);
-    --sidebar-foreground: oklch(0.985 0.001 106.423);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-    --sidebar-accent: oklch(0.268 0.007 34.298);
-    --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.553 0.013 58.071);
-  }
+  /* Surfaces */
+  --background: #fdfcfc; /* Parchment White */
+  --foreground: #1b1b1b; /* near-ink body text */
+  --card: #f5f3f1; /* Warm Sand */
+  --card-foreground: #1b1b1b;
+  --popover: #ffffff; /* elevated terminal surface */
+  --popover-foreground: #1b1b1b;
+
+  /* Controls */
+  --primary: #000000; /* Midnight Ink */
+  --primary-foreground: #fdfcfc;
+  --secondary: #f5f3f1; /* Warm Sand */
+  --secondary-foreground: #1b1b1b;
+  --muted: #f5f3f1;
+  --muted-foreground: #777169; /* Driftwood */
+  --accent: #ece9e6; /* deeper sand for hover/active */
+  --accent-foreground: #000000;
+
+  /* Status */
+  --destructive: #ba1a1a;
+  --success: #16a34a;
+  --border: #e5e5e5; /* Ash Border (hairline) */
+  --input: #e5e5e5;
+  --ring: #000000;
+
+  /* Money semantics — green = profit, red = loss */
+  --profit: #16a34a;
+  --profit-foreground: #ffffff;
+  --loss: #dc2626;
+  --loss-foreground: #ffffff;
+
+  /* Chart palette (monochrome + money) */
+  --chart-profit: #16a34a;
+  --chart-loss: #dc2626;
+  --chart-neutral: #777169; /* Driftwood */
+  --chart-1: #000000;
+  --chart-2: #4a4a4a;
+  --chart-3: #777169;
+  --chart-4: #a59f97;
+  --chart-5: #cfc4c5;
+
+  /* Decorative "Ambient Orb" accents (non-functional) */
+  --orb-violet: #0447ff;
+  --orb-ember: #ff4704;
 }
 
 @layer base {
@@ -124,26 +178,15 @@
     @apply bg-background text-foreground;
   }
 
+  /* Display type: DM Sans 300, tight tracking ("Waldenburg" feel) */
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+
   .skip-link {
-    @apply bg-background text-foreground border-border fixed left-4 top-4 z-[100] -translate-y-16 rounded-md border px-3 py-2 text-sm font-medium shadow-md transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
-  }
-
-  :root {
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --chart-1: oklch(0.488 0.243 264.376);
-      --chart-2: oklch(0.696 0.17 162.48);
-      --chart-3: oklch(0.769 0.188 70.08);
-      --chart-4: oklch(0.627 0.265 303.9);
-      --chart-5: oklch(0.645 0.246 16.439);
-    }
+    @apply bg-background text-foreground border-border fixed left-4 top-4 z-[100] -translate-y-16 border px-3 py-2 text-sm font-medium transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
   }
 }
 
@@ -153,4 +196,46 @@
 
 .react-icons {
   vertical-align: middle;
+}
+
+/* Mockup helpers (exact from the Stitch web screens) */
+.sand-card {
+  background-color: #f5f3f1;
+  border: 1px solid #e2e2e2;
+}
+
+.input-terminal {
+  border: none;
+  border-bottom: 1px solid #000000;
+  background: transparent;
+  border-radius: 0;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.input-terminal:focus,
+.input-terminal:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-bottom: 2px solid #000000;
+}
+
+/* Material Symbols (matches the Stitch mockups' iconography) */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
 }
